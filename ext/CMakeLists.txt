@@ -10,9 +10,9 @@ FetchContent_Declare(
 set (gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 # Do not install gtest on our project.
-set(INSTALL_GTEST OFF)
+set (INSTALL_GTEST OFF)
 # GMock is not necessary.
-set(BUILD_GMOCK OFF)
+set (BUILD_GMOCK OFF)
 
 FetchContent_MakeAvailable(googletest)
 
