@@ -97,6 +97,6 @@ add_subdirectory(ext)
 add_subdirectory(tests)
 
 # Add subdirectories here.
-add_subdirectory(src/kernels)
-add_subdirectory(src/core)
-add_subdirectory(src/colvillea)
+# add_subdirectory(src/kernels)
+# add_subdirectory(src/core)
+# add_subdirectory(src/colvillea)
