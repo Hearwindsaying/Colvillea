@@ -24,3 +24,12 @@ foreach(GTEST_LIB gtest; gtest_main)
         FOLDER external
     )
 endforeach()
+
+# Fetch OptiX-Owl
+FetchContent_Declare(
+    optix-owl
+    GIT_REPOSITORY https://github.com/owl-project/owl
+    GIT_TAG        v1.1.6
+)
+
+FetchContent_MakeAvailable(optix-owl)
