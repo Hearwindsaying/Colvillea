@@ -29,14 +29,14 @@ set(SOURCE_LIBRENDER
     librender/integrator.cpp
 )
 
-# embed_ptx(
-#     OUTPUT_TARGET
-#         optixdevice-kernel-ptx
-#     PTX_LINK_LIBRARIES
-#         owl::owl
-#     SOURCES
-#         ${SOURCE_OPTIX_KERNEL}
-# )
+embed_ptx(
+    OUTPUT_TARGET
+        optixdevice-kernel-ptx
+    PTX_LINK_LIBRARIES
+        owl::owl
+    SOURCES
+        ${SOURCE_OPTIX_KERNEL}
+)
 
 add_library(colvillea-core 
 STATIC 
@@ -54,7 +54,7 @@ target_link_libraries(colvillea-core
 PRIVATE
     BuildSettings
     spdlog::spdlog
-    #optixdevice-kernel-ptx
+    optixdevice-kernel-ptx
     owl::owl)
 
 source_group("src/devices" FILES ${SOURCE_DEVICES})
@@ -66,5 +66,3 @@ source_group("interface/librender" FILES ${INTERFACE})
 set_target_properties(colvillea-core PROPERTIES
     FOLDER colvillea
 )
-
-add_subdirectory(test-MDD)
