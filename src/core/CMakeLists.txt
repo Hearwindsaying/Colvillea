@@ -66,3 +66,11 @@ source_group("interface/librender" FILES ${INTERFACE})
 set_target_properties(colvillea-core PROPERTIES
     FOLDER colvillea
 )
+
+set_target_properties(optixdevice-kernel-ptx PROPERTIES
+    FOLDER colvillea
+)
+
+set_target_properties(optixdevice-kernel-ptx_ptx PROPERTIES
+    FOLDER colvillea
+)
