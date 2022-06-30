@@ -29,7 +29,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set_property (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
 
-project(colvillea)
+project(colvillea LANGUAGES CXX CUDA)
 
 if(WIN32)
     set(PLATFORM_WIN32 TRUE CACHE INTERNAL "Target platform: Win32") #WIN32 is a variable, so we cannot use string "WIN32"
@@ -60,6 +60,15 @@ set(RELEASE_CONFIGURATIONS Release RelWithDebInfo CACHE INTERNAL "Release config
 
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
     target_compile_definitions(PublicBuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>")
+    
+    # For debug settings, add address sanitizer lib (supported by MSVC).
+    # MSVC has a "addressSanitizerEnabled" property in CMakeSettings.json, but we do not use that.
+    # We just need to add compiler flag "-fsanitize=address" and ASan libraries will be linked automatically
+    # since Visual Studio 16.9 Preview 3.
+    # See also: https://devblogs.microsoft.com/cppblog/addresssanitizer-asan-for-windows-with-msvc/#compiling-with-asan-from-the-console.
+    target_compile_options(PublicBuildSettings INTERFACE -fsanitize=address)
+    # This is not needed anymore: LNK4044: unrecognized option '/fsanitize=address'; ignored
+    # target_link_options(PublicBuildSettings INTERFACE -fsanitize=address) 
 endforeach()
 
 if(DILIGENT_DEVELOPMENT)
@@ -98,5 +107,5 @@ add_subdirectory(tests)
 
 # Add subdirectories here.
 # add_subdirectory(src/kernels)
-# add_subdirectory(src/core)
-# add_subdirectory(src/colvillea)
+add_subdirectory(src/core)
+add_subdirectory(src/colvillea)

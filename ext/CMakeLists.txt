@@ -33,3 +33,16 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(optix-owl)
+
+# Fetch spdlog
+FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog
+    GIT_TAG        v1.10.0
+)
+
+FetchContent_MakeAvailable(spdlog)
+
+set_target_properties(spdlog PROPERTIES
+        FOLDER external
+)
