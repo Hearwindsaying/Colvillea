@@ -8,3 +8,5 @@ PRIVATE
 set_target_properties(colvillea PROPERTIES
     FOLDER colvillea
 )
+
+#set_target_properties(colvillea PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")

@@ -61,14 +61,18 @@ set(RELEASE_CONFIGURATIONS Release RelWithDebInfo CACHE INTERNAL "Release config
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
     target_compile_definitions(PublicBuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>")
     
-    # For debug settings, add address sanitizer lib (supported by MSVC).
-    # MSVC has a "addressSanitizerEnabled" property in CMakeSettings.json, but we do not use that.
-    # We just need to add compiler flag "-fsanitize=address" and ASan libraries will be linked automatically
-    # since Visual Studio 16.9 Preview 3.
-    # See also: https://devblogs.microsoft.com/cppblog/addresssanitizer-asan-for-windows-with-msvc/#compiling-with-asan-from-the-console.
-    target_compile_options(PublicBuildSettings INTERFACE -fsanitize=address)
-    # This is not needed anymore: LNK4044: unrecognized option '/fsanitize=address'; ignored
-    # target_link_options(PublicBuildSettings INTERFACE -fsanitize=address) 
+    if(MSVC)
+        # For debug settings, add address sanitizer lib (supported by MSVC).
+        # MSVC has a "addressSanitizerEnabled" property in CMakeSettings.json, but we do not use that.
+        # We just need to add compiler flag "-fsanitize=address" and ASan libraries will be linked automatically
+        # since Visual Studio 16.9 Preview 3.
+        # See also: https://devblogs.microsoft.com/cppblog/addresssanitizer-asan-for-windows-with-msvc/#compiling-with-asan-from-the-console.
+        target_compile_options(PublicBuildSettings INTERFACE -fsanitize=address)
+        # This is not needed anymore: LNK4044: unrecognized option '/fsanitize=address'; ignored
+        # target_link_options(PublicBuildSettings INTERFACE -fsanitize=address) 
+
+        set_target_properties(PublicBuildSettings PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")
+    endif()
 endforeach()
 
 if(DILIGENT_DEVELOPMENT)
@@ -80,6 +84,8 @@ endif()
 # BuildSettings helper interface
 add_library(BuildSettings INTERFACE)
 target_link_libraries(BuildSettings INTERFACE PublicBuildSettings)
+target_link_options(BuildSettings INTERFACE "/INCREMENTAL:NO")
+#set_target_properties(BuildSettings PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")
 
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
     target_compile_definitions(BuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:_DEBUG;DEBUG>")
