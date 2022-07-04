@@ -31,6 +31,13 @@ endif ()
 
 project(colvillea LANGUAGES CXX CUDA)
 
+##########################################################
+# External Libraries Configurations.
+##########################################################
+#find_package(ASSIMP REQUIRED)
+
+#option(USE_STATIC_ASSIMP_LIBRARY "Use assimp as a static library?"  OFF)
+
 if(WIN32)
     set(PLATFORM_WIN32 TRUE CACHE INTERNAL "Target platform: Win32") #WIN32 is a variable, so we cannot use string "WIN32"
     message("Target platform: Win32. SDK Version: " ${CMAKE_SYSTEM_VERSION})
@@ -116,3 +123,4 @@ add_subdirectory(tests)
 # add_subdirectory(src/kernels)
 add_subdirectory(src/core)
 add_subdirectory(src/colvillea)
+add_subdirectory(src/delegate)

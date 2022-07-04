@@ -69,10 +69,11 @@ PUBLIC
 target_link_libraries(colvillea-core
 PRIVATE
     BuildSettings
-    spdlog::spdlog
     optixdevice-kernel-ptx
-    owl::owl
     stb_image
+PUBLIC
+    spdlog::spdlog
+    owl::owl
 )
 
 source_group("src/devices" FILES ${SOURCE_DEVICES})

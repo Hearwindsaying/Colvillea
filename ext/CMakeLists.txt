@@ -46,3 +46,12 @@ FetchContent_MakeAvailable(spdlog)
 set_target_properties(spdlog PROPERTIES
         FOLDER external
 )
+
+# Fetch Assimp
+FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY https://github.com/assimp/assimp
+    GIT_TAG        v5.2.4
+)
+
+FetchContent_MakeAvailable(assimp)
