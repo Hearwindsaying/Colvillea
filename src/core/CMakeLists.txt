@@ -1,7 +1,3 @@
-# CMake scripts for embbeding PTX built.
-# list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-#include(embedPTX)
-
 set(CORE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 
 set(INTERFACE_LIBRENDER
@@ -51,7 +47,11 @@ embed_ptx(
         ${SOURCE_OPTIX_KERNEL}
 )
 
+# optixdevice-kernel-ptx only contains a generated .c file and cmake will consider
+# it as a C project. We explicitly hint to use C++ for linkage so that all settings
+# will be compatiable for C++ projects (/MTd by default in Debug settings).
 set_target_properties(optixdevice-kernel-ptx PROPERTIES LINKER_LANGUAGE CXX)
+
 add_library(colvillea-core 
 STATIC 
     ${INTERFACE_LIBRENDER} 

@@ -71,7 +71,10 @@ foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
         # This is not needed anymore: LNK4044: unrecognized option '/fsanitize=address'; ignored
         # target_link_options(PublicBuildSettings INTERFACE -fsanitize=address) 
 
-        set_target_properties(PublicBuildSettings PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")
+        # We cannot use incremental linking with asan.
+        # set_target_properties() does not work with interface library and target_link_options should be used instead.
+        # set_target_properties(PublicBuildSettings PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")
+        target_link_options(PublicBuildSettings INTERFACE "/INCREMENTAL:NO")
     endif()
 endforeach()
 
@@ -84,8 +87,6 @@ endif()
 # BuildSettings helper interface
 add_library(BuildSettings INTERFACE)
 target_link_libraries(BuildSettings INTERFACE PublicBuildSettings)
-target_link_options(BuildSettings INTERFACE "/INCREMENTAL:NO")
-#set_target_properties(BuildSettings PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")
 
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
     target_compile_definitions(BuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:_DEBUG;DEBUG>")
