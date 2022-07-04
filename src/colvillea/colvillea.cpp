@@ -4,7 +4,7 @@
 
 int main(int argc, char* argv[])
 {
-    std::unique_ptr<Colvillea::Core::Device> optixDevice = Colvillea::Core::Device::createDevice(Colvillea::Core::DeviceType::OptiXDevice);
+    std::unique_ptr<colvillea::core::Device> optixDevice = colvillea::core::Device::createDevice(colvillea::core::DeviceType::OptiXDevice);
 
 	return 0;
 }

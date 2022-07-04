@@ -2,9 +2,9 @@
 
 #include <librender/device.h>
 
-namespace Colvillea
+namespace colvillea
 {
-namespace Core
+namespace core
 {
 /**
  * \brief
@@ -16,8 +16,6 @@ class CUDADevice : public Device
 public:
     CUDADevice() :
         Device{"CUDADevice", DeviceType::CUDADevice} {}
-
-
 };
-} // namespace Core
-} // namespace Colvillea
+} // namespace core
+} // namespace colvillea

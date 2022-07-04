@@ -3,9 +3,9 @@
 #include <librender/device.h>
 #include <owl/owl.h>
 
-namespace Colvillea
+namespace colvillea
 {
-namespace Core
+namespace core
 {
 /**
  * \brief
@@ -32,5 +32,5 @@ private:
     /// is needed.
     OWLModule m_owlModule{nullptr};
 };
-} // namespace Core
-} // namespace Colvillea
+} // namespace core
+} // namespace colvillea

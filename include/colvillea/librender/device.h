@@ -3,9 +3,9 @@
 #include <string>
 #include <memory>
 
-namespace Colvillea
+namespace colvillea
 {
-namespace Core
+namespace core
 {
 
 /**
@@ -55,7 +55,7 @@ protected:
     /// Device name.
     std::string m_deviceName;
     /// Device type.
-    DeviceType  m_deviceType;
+    DeviceType m_deviceType;
 };
-} // namespace Core
-} // namespace Colvillea
+} // namespace core
+} // namespace colvillea

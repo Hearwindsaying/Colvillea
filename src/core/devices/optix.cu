@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2019 Ingo Wald                                                 //
+// Copyright 2019-2020 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,54 +14,62 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-// Ray gen shader for ll00-rayGenOnly. No actual rays are harmed in the making of
-// this shader. The pixel location is simply translated into a checkerboard pattern.
-
+#include "deviceCode.h"
 #include <optix_device.h>
 
-#include <owl/owl.h>
-#include <owl/common/math/vec.h>
-
-using namespace owl;
-
-struct RayGenData
-{
-    uint32_t* fbPtr;
-    vec2i     fbSize;
-    vec3f     color0;
-    vec3f     color1;
-};
-
-
-// OPTIX_RAYGEN_PROGRAM() is a simple macro defined in deviceAPI.h to add standard
-// code for defining a shader method.
-// It puts:
-//   extern "C" __global__ void __raygen__##programName
-// in front of the program name given
-OPTIX_RAYGEN_PROGRAM(simpleRayGen)
+OPTIX_RAYGEN_PROGRAM(raygen)
 ()
 {
-    // read in the program data set by the calling program hostCode.cpp using lloSbtRayGensBuild;
-    // see RayGenData in deviceCode.h
-    const RayGenData& self = owl::getProgramData<RayGenData>();
-    // Under the hood, OptiX maps rays generated in CUDA thread blocks to a pixel ID,
-    // where the ID is a 2D vector, 0 to frame buffer width-1, 0 to height-1
-    const vec2i pixelID = owl::getLaunchIndex();
+    const RayGenData& self    = owl::getProgramData<RayGenData>();
+    const vec2i       pixelID = owl::getLaunchIndex();
     if (pixelID == owl::vec2i(0))
     {
-        // the first thread ID is always (0,0), so we can generate a message to show things are working
         printf("%sHello OptiX From your First RayGen Program%s\n",
                OWL_TERMINAL_CYAN,
                OWL_TERMINAL_DEFAULT);
     }
 
-    // Generate a simple checkerboard pattern as a test. Note that the upper left corner is pixel (0,0).
-    int pattern = (pixelID.x / 8) ^ (pixelID.y / 8);
-    // alternate pattern, showing that pixel (0,0) is in the upper left corner
-    // pattern = (pixelID.x*pixelID.x + pixelID.y*pixelID.y) / 100000;
-    const vec3f color = (pattern & 1) ? self.color1 : self.color0;
+    const vec2f screen = (vec2f(pixelID) + vec2f(.5f)) / vec2f(self.fbSize);
+    owl::Ray    ray;
+    ray.origin    = self.camera.pos;
+    ray.direction = normalize(self.camera.dir_00 + screen.u * self.camera.dir_du + screen.v * self.camera.dir_dv);
 
-    // find the frame buffer location (x + width*y) and put the "computed" result there
+    vec3f color;
+    owl::traceRay(/*accel to trace against*/ self.world,
+                  /*the ray to trace*/ ray,
+                  /*prd*/ color);
+
     const int fbOfs   = pixelID.x + self.fbSize.x * pixelID.y;
     self.fbPtr[fbOfs] = owl::make_rgba(color);
+}
+
+OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
+()
+{
+    vec3f& prd = owl::getPRD<vec3f>();
+
+    const TrianglesGeomData& self = owl::getProgramData<TrianglesGeomData>();
+
+    // compute normal:
+    const int    primID = optixGetPrimitiveIndex();
+    const vec3i  index  = self.index[primID];
+    const vec3f& A      = self.vertex[index.x];
+    const vec3f& B      = self.vertex[index.y];
+    const vec3f& C      = self.vertex[index.z];
+    const vec3f  Ng     = normalize(cross(B - A, C - A));
+
+    const vec3f rayDir = optixGetWorldRayDirection();
+    prd                = (.2f + .8f * fabs(dot(rayDir, Ng))) * self.color;
+}
+
+OPTIX_MISS_PROGRAM(miss)
+()
+{
+    const vec2i pixelID = owl::getLaunchIndex();
+
+    const MissProgData& self = owl::getProgramData<MissProgData>();
+
+    vec3f& prd     = owl::getPRD<vec3f>();
+    int    pattern = (pixelID.x / 8) ^ (pixelID.y / 8);
+    prd            = (pattern & 1) ? self.color1 : self.color0;
 }

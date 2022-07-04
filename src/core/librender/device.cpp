@@ -2,9 +2,9 @@
 
 #include "../devices/optixdevice.h"
 
-namespace Colvillea
+namespace colvillea
 {
-namespace Core
+namespace core
 {
 /// Pure virtual destructor needs an implementation as well.
 Device::~Device() {}
@@ -13,5 +13,5 @@ std::unique_ptr<Device> Device::createDevice(DeviceType type)
 {
     return std::make_unique<OptiXDevice>();
 }
-}
-} // namespace Colvillea
+} // namespace core
+} // namespace colvillea
