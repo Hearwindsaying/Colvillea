@@ -8,6 +8,8 @@
 
 namespace colvillea
 {
+/// We want to hide owl::common namespace so it is safe to define aliases
+/// in header file.
 using vec3f  = owl::common::vec3f;
 using vec3ui = owl::common::vec3ui;
 

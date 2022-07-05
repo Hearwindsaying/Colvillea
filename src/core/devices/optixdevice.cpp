@@ -18,9 +18,9 @@ namespace colvillea
 namespace core
 {
 OptiXDevice::OptiXDevice() :
-    Device{"OptiXDevice", DeviceType::OptiXDevice}
+    Device{"OptiXDevice", DeviceType::OptiXDevice},
+    m_owlContext{nullptr, 1}
 {
-    this->m_owlContext = owlContextCreate(nullptr, 1);
     spdlog::info("Successfully created OptiX-Owl context!");
 
     this->m_owlModule = owlModuleCreate(this->m_owlContext, optix_ptx);
@@ -108,27 +108,14 @@ OptiXDevice::OptiXDevice() :
     owlRayGenSet3f(this->m_raygen, "camera.dir_du", (const owl3f&)camera_ddu);
     owlRayGenSet3f(this->m_raygen, "camera.dir_dv", (const owl3f&)camera_ddv);
 
-    
+    // Programs and pipelines only need to be bound once.
+    // SBT should be built on demand.
+    owlBuildPrograms(this->m_owlContext);
+    owlBuildPipeline(this->m_owlContext);
 }
 
 OptiXDevice::~OptiXDevice()
 {
-    // 
-    //this->m_dataSet->~OptiXAcceleratorDataSet();
-    for (auto&& accelData : this->m_dataSet->m_trimeshDataSet)
-    {
-        assert(accelData.vertBuffer && accelData.indexBuffer && accelData.geom && accelData.geomGroup);
-        if (accelData.vertBuffer)
-            owlBufferRelease(accelData.vertBuffer);
-        if (accelData.indexBuffer)
-            owlBufferRelease(accelData.indexBuffer);
-        if (accelData.geom)
-            owlGeomRelease(accelData.geom);
-        if (accelData.geomGroup)
-            owlGroupRelease(accelData.geomGroup);
-    }
-
-
     // https://github.com/owl-project/owl/issues/120.
     // Owl is lacking release for GeomType (will be destroyed by context anyway).
     //owlGeomTypeRelease()
@@ -140,9 +127,6 @@ OptiXDevice::~OptiXDevice()
 
     owlModuleRelease(this->m_owlModule);
     spdlog::info("Successfully destroyed OptiX-Owl module!");
-
-    owlContextDestroy(this->m_owlContext);
-    spdlog::info("Successfully destroyed OptiX-Owl context!");
 }
 
 void OptiXDevice::bindOptiXAcceleratorDataSet(std::unique_ptr<OptiXAcceleratorDataSet> pDataSet)
@@ -185,19 +169,22 @@ void OptiXDevice::bindOptiXAcceleratorDataSet(std::unique_ptr<OptiXAcceleratorDa
         groupTLAS.push_back(trimeshAccelData.geomGroup);
     }
 
-    // Build world TLAS.
+    // Create world TLAS.
+    // Our method could be invoked multiple times, so cleanup old GeomGroup first.
+    if (this->m_worldTLAS != nullptr)
+        owlGroupRelease(this->m_worldTLAS);
     this->m_worldTLAS = owlInstanceGroupCreate(this->m_owlContext, groupTLAS.size(), groupTLAS.data());
-    owlGroupBuildAccel(this->m_worldTLAS);
-
     assert(this->m_worldTLAS);
 
+    // Build world TLAS.
+    owlGroupBuildAccel(this->m_worldTLAS);
+
+    // Bind world TLAS.
     owlRayGenSetGroup(this->m_raygen, "world", this->m_worldTLAS);
 
     // ##################################################################
     // build *SBT* required to trace the groups
     // ##################################################################
-    owlBuildPrograms(this->m_owlContext);
-    owlBuildPipeline(this->m_owlContext);
     owlBuildSBT(this->m_owlContext);
 }
 
@@ -211,15 +198,12 @@ void OptiXDevice::launchTraceRayKernel()
     owlRayGenLaunch2D(this->m_raygen, fbSize.x, fbSize.y);
 
     spdlog::info("done with launch, writing picture ...");
-    // for host pinned mem it doesn't matter which device we query...
+    // for host pinned memory it doesn't matter which device we query...
     const uint32_t* fb = (const uint32_t*)owlBufferGetPointer(this->m_framebuffer, 0);
     assert(fb);
     stbi_write_png(outFileName, fbSize.x, fbSize.y, 4,
                    fb, fbSize.x * sizeof(uint32_t));
     spdlog::info("written rendered frame buffer to file {}", outFileName);
-    // ##################################################################
-    // and finally, clean up
-    // ##################################################################
 }
 } // namespace core
 } // namespace colvillea

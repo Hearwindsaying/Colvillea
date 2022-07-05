@@ -32,6 +32,8 @@ enum class DeviceType : uint32_t
 class Device
 {
 public:
+    static std::unique_ptr<Device> createDevice(DeviceType type);
+
     Device(const std::string& deviceName, DeviceType deviceType) :
         m_deviceName{deviceName}, m_deviceType{deviceType} {}
 
@@ -46,8 +48,6 @@ public:
         return this->m_deviceType;
     }
 
-    static std::unique_ptr<Device> createDevice(DeviceType type);
-
     /// We define a pure virtual destructor to avoid creating Device class.
     virtual ~Device() = 0;
 
@@ -55,7 +55,7 @@ protected:
     /// Device name.
     std::string m_deviceName;
     /// Device type.
-    DeviceType m_deviceType;
+    DeviceType m_deviceType{DeviceType::None};
 };
 } // namespace core
 } // namespace colvillea

@@ -7,7 +7,8 @@ namespace colvillea
 {
 namespace core
 {
-WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator()
+WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator() :
+    Integrator{IntegratorType::WavefrontPathTracing}
 {
     std::unique_ptr<Device> pDevice = Device::createDevice(DeviceType::OptiXDevice);
     this->m_optixDevice.reset(static_cast<OptiXDevice*>(pDevice.release()));

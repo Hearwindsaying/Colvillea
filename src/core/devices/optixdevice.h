@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <librender/device.h>
 #include <nodes/shapes/trianglemesh.h>
 #include <owl/owl.h>
@@ -9,12 +11,16 @@ namespace colvillea
 namespace core
 {
 
+/**
+ * \brief
+ *    Acceleration structure data set for OptiX device.
+ */
 class OptiXAcceleratorDataSet
 {
     friend class OptiXDevice;
 
 public:
-    OptiXAcceleratorDataSet(const std::vector<TriangleMesh> &trimeshes)
+    OptiXAcceleratorDataSet(const std::vector<TriangleMesh>& trimeshes)
     {
         this->m_trimeshDataSet.reserve(trimeshes.size());
         for (const auto& mesh : trimeshes)
@@ -24,13 +30,45 @@ public:
         }
     }
 
+    OptiXAcceleratorDataSet(const OptiXAcceleratorDataSet&) = delete;
+    OptiXAcceleratorDataSet(OptiXAcceleratorDataSet&&)      = delete;
+    OptiXAcceleratorDataSet& operator=(const OptiXAcceleratorDataSet&) = delete;
+    OptiXAcceleratorDataSet& operator=(OptiXAcceleratorDataSet&&) = delete;
+
     ~OptiXAcceleratorDataSet()
     {
-        
+        for (auto&& accelData : this->m_trimeshDataSet)
+        {
+            assert(accelData.vertBuffer && accelData.indexBuffer && accelData.geom && accelData.geomGroup);
+            if (accelData.vertBuffer)
+            {
+                owlBufferRelease(accelData.vertBuffer);
+                accelData.vertBuffer = nullptr;
+            }
+            if (accelData.indexBuffer)
+            {
+                owlBufferRelease(accelData.indexBuffer);
+                accelData.indexBuffer = nullptr;
+            }
+            if (accelData.geom)
+            {
+                owlGeomRelease(accelData.geom);
+                accelData.geom = nullptr;
+            }
+            if (accelData.geomGroup)
+            {
+                owlGroupRelease(accelData.geomGroup);
+                accelData.geomGroup = nullptr;
+            }
+        }
     }
 
 private:
-    // TODO: Destructor
+    /**
+     * \brief
+     *    TriMeshAccelData simply wraps TriangleMesh data source and
+     * OptiX buffers. Allocation/Deallocation are performed by OptiXDevice.
+     */
     struct TriMeshAccelData
     {
         // Each TriangleMesh corresponds to one OWLGroup.
@@ -41,6 +79,7 @@ private:
         OWLGroup            geomGroup{nullptr};
     };
 
+    /// DataSet aggregate.
     std::vector<TriMeshAccelData> m_trimeshDataSet;
 };
 
@@ -61,26 +100,66 @@ public:
     OptiXDevice();
     ~OptiXDevice();
 
+    /// Bind OptiXAcceleratorDataSet for OptiXDevice and build BVH.
     void bindOptiXAcceleratorDataSet(std::unique_ptr<OptiXAcceleratorDataSet> pDataSet);
 
+    /// Launch OptiX intersection kernel to trace rays and read back
+    /// intersection information.
     void launchTraceRayKernel();
 
+
 private:
-    /// OWLContext.
-    OWLContext m_owlContext{nullptr};
+    struct WrappedOWLContext
+    {
+        WrappedOWLContext(int32_t* requestIds, int numDevices)
+        {
+            this->owlContext = owlContextCreate(requestIds, numDevices);
+        }
+
+        WrappedOWLContext(const WrappedOWLContext&) = delete;
+        WrappedOWLContext(WrappedOWLContext&&)      = delete;
+        WrappedOWLContext& operator=(const WrappedOWLContext&) = delete;
+        WrappedOWLContext& operator=(WrappedOWLContext&&) = delete;
+        
+        ~WrappedOWLContext()
+        {
+            assert(this->owlContext);
+            owlContextDestroy(this->owlContext);
+
+            spdlog::info("Successfully destroyed OptiX-Owl context!");
+        }
+
+        /// This makes our wrapped type transparent to users.
+        /// It just look like a plain OWLContext type.
+        operator OWLContext() const
+        {
+            return this->owlContext;
+        }
+
+        OWLContext owlContext{nullptr};
+    };
+
+private:
+    /// OWLContext. Always put this member the first so that it would
+    /// be the last member to destroy.
+    WrappedOWLContext m_owlContext;
 
     /// OWLModule. Only one module for ray-scene intersection queries
     /// is needed.
     OWLModule m_owlModule{nullptr};
 
+    /// OWLGeomType for TriangleMesh shape.
     OWLGeomType m_owlTriMeshGeomType{nullptr};
 
-    std::unique_ptr<OptiXAcceleratorDataSet> m_dataSet;
-    
+    /// World TLAS.
     OWLGroup m_worldTLAS{nullptr};
 
-    OWLRayGen m_raygen{nullptr};
+    /// Ray generation and miss programs.
+    OWLRayGen   m_raygen{nullptr};
     OWLMissProg m_miss{nullptr};
+
+    /// Accelerator data set.
+    std::unique_ptr<OptiXAcceleratorDataSet> m_dataSet;
 
     /// Temporary
     OWLBuffer m_framebuffer{nullptr};

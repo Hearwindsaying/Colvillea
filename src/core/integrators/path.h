@@ -18,9 +18,9 @@ public:
     WavefrontPathTracingIntegrator();
     ~WavefrontPathTracingIntegrator();
 
-    void bindSceneTriangleMeshesData(const std::vector<TriangleMesh>& trimeshes) override;
+    virtual void bindSceneTriangleMeshesData(const std::vector<TriangleMesh>& trimeshes) override;
 
-    void render() override;
+    virtual void render() override;
 
 private:
     std::unique_ptr<OptiXDevice> m_optixDevice;

@@ -13,6 +13,8 @@ class Scene
 public:
     Scene() {}
 
+    /// Add TriangleMeshes to the scene.
+    /// This methods simply append \trimeshes to the scene.
     void addTriangleMeshes(const std::vector<TriangleMesh> & trimeshes)
     {
         this->m_trimeshes.insert(this->m_trimeshes.end(), trimeshes.begin(), trimeshes.end());
@@ -24,6 +26,7 @@ public:
     }
 
 private:
+    /// TriangleMesh shape aggregate.
     std::vector<TriangleMesh> m_trimeshes;
 };
 }
