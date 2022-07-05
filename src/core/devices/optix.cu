@@ -59,7 +59,7 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
     const vec3f  Ng     = normalize(cross(B - A, C - A));
 
     const vec3f rayDir = optixGetWorldRayDirection();
-    prd                = (.2f + .8f * fabs(dot(rayDir, Ng))) * self.color;
+    prd                = (.2f + .8f * fabs(dot(rayDir, Ng))) * vec3f(0.0,0.0,0.5);
 }
 
 OPTIX_MISS_PROGRAM(miss)

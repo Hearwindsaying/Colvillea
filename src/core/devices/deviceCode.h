@@ -24,8 +24,6 @@ using namespace owl;
 /* variables for the triangle mesh geometry */
 struct TrianglesGeomData
 {
-  /*! base color we use for the entire mesh */
-  vec3f color;
   /*! array/buffer of vertex indices */
   vec3i *index;
   /*! array/buffer of vertex positions */

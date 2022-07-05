@@ -1,3 +1,5 @@
+#pragma once
+
 #include <librender/nodebase/shape.h>
 
 #include <vector>
@@ -21,7 +23,11 @@ struct Triangle
 {
     Triangle(const uint32_t idx0, const uint32_t idx1, const uint32_t idx2) :
         index{idx0, idx1, idx2} {}
-    vec3ui index[3];
+
+    Triangle(const vec3ui idx) :
+        index{idx.x, idx.y, idx.z} {}
+
+    uint32_t index[3];
 };
 
 class TriangleMesh : public Shape
@@ -38,6 +44,16 @@ public:
         m_vertices{std::move(verts)},
         m_triangles{std::move(tris)}
     {
+    }
+
+    const std::vector<vec3f>& getVertices() const
+    {
+        return this->m_vertices;
+    }
+
+    const std::vector<Triangle>& getTriangles() const
+    {
+        return this->m_triangles;
     }
 
 private:

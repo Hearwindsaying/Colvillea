@@ -8,6 +8,29 @@ namespace colvillea
 {
 namespace delegate
 {
+std::vector<core::TriangleMesh> MeshImporter::loadDefaultCube()
+{
+    std::vector<core::TriangleMesh> cubeMesh;
+
+    const int NUM_VERTICES = 8;
+    vec3f     vertices[NUM_VERTICES] =
+        {
+            {-1.f, -1.f, -1.f},
+            {+1.f, -1.f, -1.f},
+            {-1.f, +1.f, -1.f},
+            {+1.f, +1.f, -1.f},
+            {-1.f, -1.f, +1.f},
+            {+1.f, -1.f, +1.f},
+            {-1.f, +1.f, +1.f},
+            {+1.f, +1.f, +1.f}};
+
+    const int                   NUM_INDICES = 12;
+    std::vector<core::Triangle> triangles{
+        {0, 1, 3}, {2, 3, 0}, {5, 7, 6}, {5, 6, 4}, {0, 4, 5}, {0, 5, 1}, {2, 3, 7}, {2, 7, 6}, {1, 5, 7}, {1, 7, 3}, {4, 0, 2}, {4, 2, 6}};
+
+    cubeMesh.push_back(core::TriangleMesh{std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles)});
+    return cubeMesh;
+}
 std::vector<core::TriangleMesh> MeshImporter::loadMeshes(const std::filesystem::path& meshfile)
 {
     Assimp::Importer importer;

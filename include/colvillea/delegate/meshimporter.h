@@ -1,3 +1,5 @@
+#pragma once
+
 #include <filesystem>
 #include <memory>
 #include <vector>
@@ -17,8 +19,11 @@ namespace delegate
 class MeshImporter
 {
 public:
+    static std::vector<core::TriangleMesh> loadDefaultCube();
+
     static std::vector<core::TriangleMesh> loadMeshes(const std::filesystem::path& meshfile);
 
+private:
     static void processNode(std::vector<core::TriangleMesh>& meshes, aiNode* node, const aiScene* scene);
 
     static core::TriangleMesh processMesh(aiMesh* mesh, const aiScene* scene);
