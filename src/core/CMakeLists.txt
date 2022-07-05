@@ -4,6 +4,7 @@ set(INTERFACE_LIBRENDER
     ${CORE_INCLUDE_DIR}/librender/device.h
     ${CORE_INCLUDE_DIR}/librender/integrator.h
     ${CORE_INCLUDE_DIR}/librender/scene.h
+    ${CORE_INCLUDE_DIR}/librender/renderengine.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/shape.h
 )
 
@@ -30,6 +31,7 @@ set(SOURCE_LIBRENDER
     librender/device.cpp
     librender/integrator.cpp
     librender/scene.cpp
+    librender/renderengine.cpp
     librender/nodebase/shape.cpp
 )
 
