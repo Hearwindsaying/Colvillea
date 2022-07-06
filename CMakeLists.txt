@@ -37,6 +37,7 @@ project(colvillea LANGUAGES CXX CUDA)
 #find_package(ASSIMP REQUIRED)
 
 #option(USE_STATIC_ASSIMP_LIBRARY "Use assimp as a static library?"  OFF)
+option(ENABLE_ASAN "Enable asan for debug build?" ON)
 
 if(WIN32)
     set(PLATFORM_WIN32 TRUE CACHE INTERNAL "Target platform: Win32") #WIN32 is a variable, so we cannot use string "WIN32"
@@ -69,19 +70,24 @@ foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
     target_compile_definitions(PublicBuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>")
     
     if(MSVC)
+        # ASan will not work with CRT memory check. So if you want to use CRT utilities for
+        # memory check. Disable Asan.
+        # Alternative: use leak sanitizer (not supported by MSVC yet)
+        if (ENABLE_ASAN)
         # For debug settings, add address sanitizer lib (supported by MSVC).
         # MSVC has a "addressSanitizerEnabled" property in CMakeSettings.json, but we do not use that.
         # We just need to add compiler flag "-fsanitize=address" and ASan libraries will be linked automatically
         # since Visual Studio 16.9 Preview 3.
         # See also: https://devblogs.microsoft.com/cppblog/addresssanitizer-asan-for-windows-with-msvc/#compiling-with-asan-from-the-console.
-        target_compile_options(PublicBuildSettings INTERFACE -fsanitize=address)
+            target_compile_options(PublicBuildSettings INTERFACE -fsanitize=address)
         # This is not needed anymore: LNK4044: unrecognized option '/fsanitize=address'; ignored
         # target_link_options(PublicBuildSettings INTERFACE -fsanitize=address) 
 
         # We cannot use incremental linking with asan.
         # set_target_properties() does not work with interface library and target_link_options should be used instead.
         # set_target_properties(PublicBuildSettings PROPERTIES LINK_FLAGS "/INCREMENTAL:NO")
-        target_link_options(PublicBuildSettings INTERFACE "/INCREMENTAL:NO")
+            target_link_options(PublicBuildSettings INTERFACE "/INCREMENTAL:NO")
+        endif()
     endif()
 endforeach()
 

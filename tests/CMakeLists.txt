@@ -20,5 +20,5 @@ set_target_properties(test-sample PROPERTIES
     FOLDER tests
 )
 
-include(GoogleTest)
-gtest_discover_tests(test-sample)
+#include(GoogleTest)
+#gtest_discover_tests(test-sample)

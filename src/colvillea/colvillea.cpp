@@ -7,7 +7,6 @@
 
 using namespace colvillea;
 
-
 int main(int argc, char* argv[])
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -18,11 +17,10 @@ int main(int argc, char* argv[])
 	ptIntegrator->bindSceneTriangleMeshesData(loadedMeshes);
     ptIntegrator->render();
 
-	ptIntegrator->bindSceneTriangleMeshesData(delegate::MeshImporter::loadDefaultCube());
-    ptIntegrator->render();
-    ptIntegrator->render();
-    ptIntegrator->render();
-    ptIntegrator->render();
-
+	//ptIntegrator->bindSceneTriangleMeshesData(delegate::MeshImporter::loadDefaultCube());
+ //   ptIntegrator->render();
+ //   ptIntegrator->render();
+ //   ptIntegrator->render();
+ //   ptIntegrator->render();
 	return 0;
 }
