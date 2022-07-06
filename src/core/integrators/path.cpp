@@ -18,7 +18,7 @@ WavefrontPathTracingIntegrator::~WavefrontPathTracingIntegrator()
 
 }
 
-void WavefrontPathTracingIntegrator::bindSceneTriangleMeshesData(const std::vector<TriangleMesh>& trimeshes)
+void WavefrontPathTracingIntegrator::bindSceneTriangleMeshesData(const std::vector<const TriangleMesh*>& trimeshes)
 {
     // Compile OptiXAcceleratorDataSet.
     std::unique_ptr<OptiXAcceleratorDataSet> optixAccelDataSet = std::make_unique<OptiXAcceleratorDataSet>(trimeshes);

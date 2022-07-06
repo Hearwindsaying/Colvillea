@@ -144,22 +144,23 @@ void OptiXDevice::bindOptiXAcceleratorDataSet(std::unique_ptr<OptiXAcceleratorDa
     {
         // We should not build buffers twice.
         assert(!trimeshAccelData.vertBuffer && !trimeshAccelData.indexBuffer && !trimeshAccelData.geom && !trimeshAccelData.geomGroup);
+        assert(trimeshAccelData.trimesh);
 
         // Build OWLGeom and setup vertex/index buffers for triangle mesh.
         trimeshAccelData.vertBuffer  = owlDeviceBufferCreate(this->m_owlContext,
                                                              OWL_FLOAT3,
-                                                             trimeshAccelData.trimesh.getVertices().size(),
-                                                             trimeshAccelData.trimesh.getVertices().data());
+                                                             trimeshAccelData.trimesh->getVertices().size(),
+                                                             trimeshAccelData.trimesh->getVertices().data());
         trimeshAccelData.indexBuffer = owlDeviceBufferCreate(this->m_owlContext,
                                                              OWL_UINT3,
-                                                             trimeshAccelData.trimesh.getTriangles().size(),
-                                                             trimeshAccelData.trimesh.getTriangles().data());
+                                                             trimeshAccelData.trimesh->getTriangles().size(),
+                                                             trimeshAccelData.trimesh->getTriangles().data());
 
         trimeshAccelData.geom = owlGeomCreate(this->m_owlContext, this->m_owlTriMeshGeomType);
         owlTrianglesSetVertices(trimeshAccelData.geom, trimeshAccelData.vertBuffer,
-                                trimeshAccelData.trimesh.getVertices().size(), sizeof(vec3f), 0);
+                                trimeshAccelData.trimesh->getVertices().size(), sizeof(vec3f), 0);
         owlTrianglesSetIndices(trimeshAccelData.geom, trimeshAccelData.indexBuffer,
-                               trimeshAccelData.trimesh.getTriangles().size(), sizeof(Triangle), 0);
+                               trimeshAccelData.trimesh->getTriangles().size(), sizeof(Triangle), 0);
 
         owlGeomSetBuffer(trimeshAccelData.geom, "vertex", trimeshAccelData.vertBuffer);
         owlGeomSetBuffer(trimeshAccelData.geom, "index", trimeshAccelData.indexBuffer);

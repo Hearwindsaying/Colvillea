@@ -1,14 +1,16 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 #include <optional>
-
-#include <nodes/shapes/trianglemesh.h>
 
 namespace colvillea
 {
 namespace core
 {
+
+class TriangleMesh;
+
 class Scene
 {
 public:
@@ -17,24 +19,28 @@ public:
 public:
     Scene() {}
 
+    void addTriangleMesh(std::unique_ptr<TriangleMesh> triMesh);
+
     /// Add TriangleMeshes to the scene.
     /// This methods simply append \trimeshes to the scene.
-    void addTriangleMeshes(const std::vector<TriangleMesh> & trimeshes)
-    {
-        this->m_trimeshes.insert(this->m_trimeshes.end(), trimeshes.begin(), trimeshes.end());
-        this->m_trimeshesChanged = true;
-    }
+    void addTriangleMeshes(std::vector<std::unique_ptr<TriangleMesh>>&& trimeshes);
 
-    const std::vector<TriangleMesh>& getSceneTriMeshes() const
+    const std::vector<std::unique_ptr<TriangleMesh>>& collectAllTriangleMeshes() const
     {
         return this->m_trimeshes;
     }
 
-    std::optional<const std::vector<TriangleMesh>*> collectDirtyTriangleMeshes(); 
+    /// Collect dirty TriMeshes that need to be built acceleration structures.
+    /// Note that we return a vector of viewing pointers to TriangleMesh instead
+    /// of sharing ownership -- we consider TriMeshes data is exclusively owned
+    /// by Scene, not others such as RenderEngine or Integrator since they do
+    /// not need to own or share a ownership of TriMeshes and what they need
+    /// is a view to TriMesh data instead.
+    std::optional<std::vector<const TriangleMesh*>> collectDirtyTriangleMeshes(); 
 
 private:
     /// TriangleMesh shape aggregate.
-    std::vector<TriangleMesh> m_trimeshes;
+    std::vector<std::unique_ptr<TriangleMesh>> m_trimeshes;
 
     /// Mark if we have dirty trimeshes.
     bool m_trimeshesChanged{false};

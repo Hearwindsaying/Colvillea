@@ -14,7 +14,7 @@ void RenderEngine::startRendering()
     auto dirtyTriMeshes = this->m_scene->collectDirtyTriangleMeshes();
     if (dirtyTriMeshes)
     {
-        this->m_integrator->bindSceneTriangleMeshesData(**dirtyTriMeshes);
+        this->m_integrator->bindSceneTriangleMeshesData(*dirtyTriMeshes);
     }
 
     this->m_integrator->render();

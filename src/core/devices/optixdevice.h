@@ -20,13 +20,13 @@ class OptiXAcceleratorDataSet
     friend class OptiXDevice;
 
 public:
-    OptiXAcceleratorDataSet(const std::vector<TriangleMesh>& trimeshes)
+    OptiXAcceleratorDataSet(const std::vector<const TriangleMesh*>& trimeshes)
     {
         this->m_trimeshDataSet.reserve(trimeshes.size());
         for (const auto& mesh : trimeshes)
         {
             // C++20: Designated initialization.
-            this->m_trimeshDataSet.push_back(TriMeshAccelData{mesh, nullptr, nullptr, nullptr, nullptr});
+            this->m_trimeshDataSet.push_back(TriMeshAccelData{mesh});
         }
     }
 
@@ -67,8 +67,13 @@ private:
      */
     struct TriMeshAccelData
     {
+        TriMeshAccelData(const TriangleMesh* mesh) :
+            trimesh{mesh} { assert(mesh); }
+
+
         // Each TriangleMesh corresponds to one OWLGroup.
-        const TriangleMesh& trimesh;
+        /// Non-owning pointer to TriangleMesh data.
+        const TriangleMesh* trimesh{nullptr};
         OWLBuffer           vertBuffer{nullptr};
         OWLBuffer           indexBuffer{nullptr};
         OWLGeom             geom{nullptr};

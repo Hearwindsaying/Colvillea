@@ -1,5 +1,7 @@
 #include <delegate/meshimporter.h>
 
+#include <nodes/shapes/trianglemesh.h>
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -8,10 +10,8 @@ namespace colvillea
 {
 namespace delegate
 {
-std::vector<core::TriangleMesh> MeshImporter::loadDefaultCube()
+std::unique_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube()
 {
-    std::vector<core::TriangleMesh> cubeMesh;
-
     const int NUM_VERTICES = 8;
     vec3f     vertices[NUM_VERTICES] =
         {
@@ -28,10 +28,10 @@ std::vector<core::TriangleMesh> MeshImporter::loadDefaultCube()
     std::vector<core::Triangle> triangles{
         {0, 1, 3}, {2, 3, 0}, {5, 7, 6}, {5, 6, 4}, {0, 4, 5}, {0, 5, 1}, {2, 3, 7}, {2, 7, 6}, {1, 5, 7}, {1, 7, 3}, {4, 0, 2}, {4, 2, 6}};
 
-    cubeMesh.push_back(core::TriangleMesh{std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles)});
-    return cubeMesh;
+    return std::make_unique<core::TriangleMesh>(std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles));
 }
-std::vector<core::TriangleMesh> MeshImporter::loadMeshes(const std::filesystem::path& meshfile)
+
+std::vector<std::unique_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const std::filesystem::path& meshfile)
 {
     Assimp::Importer importer;
     const aiScene*   scene = importer.ReadFile(meshfile.string().c_str(),
@@ -47,7 +47,7 @@ std::vector<core::TriangleMesh> MeshImporter::loadMeshes(const std::filesystem::
         return {};
     }
 
-    std::vector<core::TriangleMesh> meshes;
+    std::vector<std::unique_ptr<core::TriangleMesh>> meshes;
 
     // process ASSIMP's root node recursively
     processNode(meshes, scene->mRootNode, scene);
@@ -55,7 +55,7 @@ std::vector<core::TriangleMesh> MeshImporter::loadMeshes(const std::filesystem::
     return meshes;
 }
 
-void MeshImporter::processNode(std::vector<core::TriangleMesh>& meshes, aiNode* node, const aiScene* scene)
+void MeshImporter::processNode(std::vector<std::unique_ptr<core::TriangleMesh>>& meshes, aiNode* node, const aiScene* scene)
 {
     assert(node != nullptr && scene != nullptr);
 
@@ -74,7 +74,7 @@ void MeshImporter::processNode(std::vector<core::TriangleMesh>& meshes, aiNode* 
     }
 }
 
-core::TriangleMesh MeshImporter::processMesh(aiMesh* mesh, const aiScene* scene)
+std::unique_ptr<core::TriangleMesh> MeshImporter::processMesh(aiMesh* mesh, const aiScene* scene)
 {
     assert(mesh != nullptr && scene != nullptr);
 
@@ -99,7 +99,7 @@ core::TriangleMesh MeshImporter::processMesh(aiMesh* mesh, const aiScene* scene)
         triangles.push_back(core::Triangle{face.mIndices[0], face.mIndices[1], face.mIndices[2]});
     }
     // return a mesh object created from the extracted mesh data
-    return core::TriangleMesh(std::move(vertices), std::move(triangles));
+    return std::make_unique<core::TriangleMesh>(std::move(vertices), std::move(triangles));
 }
 } // namespace delegate
 } // namespace colvillea
