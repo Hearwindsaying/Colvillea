@@ -120,7 +120,10 @@ OptiXDevice::~OptiXDevice()
     // Owl is lacking release for GeomType (will be destroyed by context anyway).
     //owlGeomTypeRelease()
     
-    owlGroupRelease(this->m_worldTLAS);
+    if (this->m_worldTLAS)
+    {
+        owlGroupRelease(this->m_worldTLAS);
+    }
     owlRayGenRelease(this->m_raygen);
     owlBufferRelease(this->m_framebuffer);
     // missing miss.

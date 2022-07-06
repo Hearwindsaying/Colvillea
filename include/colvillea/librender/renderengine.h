@@ -24,6 +24,18 @@ namespace core
  */
 class RenderEngine
 {
+public:
+    static std::unique_ptr<RenderEngine> createRenderEngine(std::unique_ptr<Integrator> integrator, std::unique_ptr<Scene> scene);
+
+public:
+    RenderEngine(std::unique_ptr<Integrator> integrator, std::unique_ptr<Scene> scene):
+        m_integrator{std::move(integrator)}, m_scene{std::move(scene)} {}
+
+    /// Start rendering.
+    void startRendering();
+
+    /// Done with rendering.
+    void endRendering() {}
 
 private:
     std::unique_ptr<Integrator> m_integrator;

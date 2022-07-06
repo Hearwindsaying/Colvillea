@@ -43,22 +43,18 @@ public:
             if (accelData.vertBuffer)
             {
                 owlBufferRelease(accelData.vertBuffer);
-                accelData.vertBuffer = nullptr;
             }
             if (accelData.indexBuffer)
             {
                 owlBufferRelease(accelData.indexBuffer);
-                accelData.indexBuffer = nullptr;
             }
             if (accelData.geom)
             {
                 owlGeomRelease(accelData.geom);
-                accelData.geom = nullptr;
             }
             if (accelData.geomGroup)
             {
                 owlGroupRelease(accelData.geomGroup);
-                accelData.geomGroup = nullptr;
             }
         }
     }
