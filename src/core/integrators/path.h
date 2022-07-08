@@ -18,7 +18,9 @@ public:
     WavefrontPathTracingIntegrator();
     ~WavefrontPathTracingIntegrator();
 
-    virtual void bindSceneTriangleMeshesData(const std::vector<const TriangleMesh*>& trimeshes) override;
+    virtual void buildBLAS(const std::vector<TriangleMesh*>& trimeshes) override;
+
+    virtual void buildTLAS(const std::vector<const TriangleMesh*>& trimeshes) override;
 
     virtual void render() override;
 

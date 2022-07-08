@@ -1,6 +1,7 @@
 set(CORE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 
 set(INTERFACE_LIBRENDER
+    ${CORE_INCLUDE_DIR}/librender/asdataset.h
     ${CORE_INCLUDE_DIR}/librender/device.h
     ${CORE_INCLUDE_DIR}/librender/integrator.h
     ${CORE_INCLUDE_DIR}/librender/scene.h
@@ -28,6 +29,7 @@ set(SOURCE_INTEGRATORS
 )
 
 set(SOURCE_LIBRENDER
+    librender/asdataset.cpp
     librender/device.cpp
     librender/integrator.cpp
     librender/scene.cpp

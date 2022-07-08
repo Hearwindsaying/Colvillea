@@ -30,7 +30,9 @@ public:
     Integrator(IntegratorType type) :
         m_integratorType{type} {}
 
-    virtual void bindSceneTriangleMeshesData(const std::vector<const TriangleMesh*>& trimeshes) = 0;
+    virtual void buildBLAS(const std::vector<TriangleMesh*>& trimeshes) = 0;
+    
+    virtual void buildTLAS(const std::vector<const TriangleMesh*>& trimeshes) = 0;
 
     /// Render the scene.
     virtual void render() = 0;

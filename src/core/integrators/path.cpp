@@ -18,11 +18,14 @@ WavefrontPathTracingIntegrator::~WavefrontPathTracingIntegrator()
 
 }
 
-void WavefrontPathTracingIntegrator::bindSceneTriangleMeshesData(const std::vector<const TriangleMesh*>& trimeshes)
+void WavefrontPathTracingIntegrator::buildBLAS(const std::vector<TriangleMesh*>& trimeshes)
 {
-    // Compile OptiXAcceleratorDataSet.
-    std::unique_ptr<OptiXAcceleratorDataSet> optixAccelDataSet = std::make_unique<OptiXAcceleratorDataSet>(trimeshes);
-    this->m_optixDevice->bindOptiXAcceleratorDataSet(std::move(optixAccelDataSet));
+    this->m_optixDevice->buildOptiXAccelBLASes(trimeshes);
+}
+
+void WavefrontPathTracingIntegrator::buildTLAS(const std::vector<const TriangleMesh*>& trimeshes)
+{
+    this->m_optixDevice->buildOptiXAccelTLAS(trimeshes);
 }
 
 void WavefrontPathTracingIntegrator::render()

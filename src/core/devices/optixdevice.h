@@ -3,86 +3,14 @@
 #include <spdlog/spdlog.h>
 
 #include <librender/device.h>
-#include <nodes/shapes/trianglemesh.h>
+#include <librender/asdataset.h>
+
 #include <owl/owl.h>
 
 namespace colvillea
 {
 namespace core
 {
-
-/**
- * \brief
- *    Acceleration structure data set for OptiX device.
- */
-class OptiXAcceleratorDataSet
-{
-    friend class OptiXDevice;
-
-public:
-    OptiXAcceleratorDataSet(const std::vector<const TriangleMesh*>& trimeshes)
-    {
-        this->m_trimeshDataSet.reserve(trimeshes.size());
-        for (const auto& mesh : trimeshes)
-        {
-            // C++20: Designated initialization.
-            this->m_trimeshDataSet.push_back(TriMeshAccelData{mesh});
-        }
-    }
-
-    OptiXAcceleratorDataSet(const OptiXAcceleratorDataSet&) = delete;
-    OptiXAcceleratorDataSet(OptiXAcceleratorDataSet&&)      = delete;
-    OptiXAcceleratorDataSet& operator=(const OptiXAcceleratorDataSet&) = delete;
-    OptiXAcceleratorDataSet& operator=(OptiXAcceleratorDataSet&&) = delete;
-
-    ~OptiXAcceleratorDataSet()
-    {
-        for (auto&& accelData : this->m_trimeshDataSet)
-        {
-            assert(accelData.vertBuffer && accelData.indexBuffer && accelData.geom && accelData.geomGroup);
-            if (accelData.vertBuffer)
-            {
-                owlBufferRelease(accelData.vertBuffer);
-            }
-            if (accelData.indexBuffer)
-            {
-                owlBufferRelease(accelData.indexBuffer);
-            }
-            if (accelData.geom)
-            {
-                owlGeomRelease(accelData.geom);
-            }
-            if (accelData.geomGroup)
-            {
-                owlGroupRelease(accelData.geomGroup);
-            }
-        }
-    }
-
-private:
-    /**
-     * \brief
-     *    TriMeshAccelData simply wraps TriangleMesh data source and
-     * OptiX buffers. Allocation/Deallocation are performed by OptiXDevice.
-     */
-    struct TriMeshAccelData
-    {
-        TriMeshAccelData(const TriangleMesh* mesh) :
-            trimesh{mesh} { assert(mesh); }
-
-
-        // Each TriangleMesh corresponds to one OWLGroup.
-        /// Non-owning pointer to TriangleMesh data.
-        const TriangleMesh* trimesh{nullptr};
-        OWLBuffer           vertBuffer{nullptr};
-        OWLBuffer           indexBuffer{nullptr};
-        OWLGeom             geom{nullptr};
-        OWLGroup            geomGroup{nullptr};
-    };
-
-    /// DataSet aggregate.
-    std::vector<TriMeshAccelData> m_trimeshDataSet;
-};
 
 /**
  * \brief
@@ -101,8 +29,12 @@ public:
     OptiXDevice();
     ~OptiXDevice();
 
-    /// Bind OptiXAcceleratorDataSet for OptiXDevice and build BVH.
-    void bindOptiXAcceleratorDataSet(std::unique_ptr<OptiXAcceleratorDataSet> pDataSet);
+    /// Force rebuilding BLAS/recreating device buffers in trimeshes.
+    /// It should be called when a TriangleMesh is just added to the
+    /// scene, or it is just changed.
+    void buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimeshes);
+
+    void buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes);
 
     /// Launch OptiX intersection kernel to trace rays and read back
     /// intersection information.
@@ -152,15 +84,12 @@ private:
     /// OWLGeomType for TriangleMesh shape.
     OWLGeomType m_owlTriMeshGeomType{nullptr};
 
-    /// World TLAS.
-    OWLGroup m_worldTLAS{nullptr};
-
     /// Ray generation and miss programs.
     OWLRayGen   m_raygen{nullptr};
     OWLMissProg m_miss{nullptr};
 
     /// Accelerator data set.
-    std::unique_ptr<OptiXAcceleratorDataSet> m_dataSet;
+    std::unique_ptr<TLASDataSet> m_worldTLAS;
 
     /// Temporary
     OWLBuffer m_framebuffer{nullptr};

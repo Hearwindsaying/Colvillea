@@ -1,5 +1,7 @@
 #include "optixdevice.h"
 
+#include <nodes/shapes/trianglemesh.h>
+
 #include <spdlog/spdlog.h>
 
 extern "C" char optix_ptx[];
@@ -119,11 +121,7 @@ OptiXDevice::~OptiXDevice()
     // https://github.com/owl-project/owl/issues/120.
     // Owl is lacking release for GeomType (will be destroyed by context anyway).
     //owlGeomTypeRelease()
-    
-    if (this->m_worldTLAS)
-    {
-        owlGroupRelease(this->m_worldTLAS);
-    }
+
     owlRayGenRelease(this->m_raygen);
     owlBufferRelease(this->m_framebuffer);
     // missing miss.
@@ -132,59 +130,71 @@ OptiXDevice::~OptiXDevice()
     spdlog::info("Successfully destroyed OptiX-Owl module!");
 }
 
-void OptiXDevice::bindOptiXAcceleratorDataSet(std::unique_ptr<OptiXAcceleratorDataSet> pDataSet)
+void OptiXDevice::buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimeshes)
 {
-    this->m_dataSet = std::move(pDataSet);
-
-    std::vector<OWLGroup> groupTLAS;
-    groupTLAS.reserve(this->m_dataSet->m_trimeshDataSet.size());
-
     spdlog::info("building geometries ...");
-    for (auto&& trimeshAccelData : this->m_dataSet->m_trimeshDataSet)
+
+    for (auto&& trimesh : trimeshes)
     {
-        // We should not build buffers twice.
-        assert(!trimeshAccelData.vertBuffer && !trimeshAccelData.indexBuffer && !trimeshAccelData.geom && !trimeshAccelData.geomGroup);
-        assert(trimeshAccelData.trimesh);
+        trimesh->getTriMeshBLAS()->resetDeviceBuffers();
+
+        auto& vertBuffer  = trimesh->getTriMeshBLAS()->vertBuffer;
+        auto& indexBuffer = trimesh->getTriMeshBLAS()->indexBuffer;
+        auto& geom        = trimesh->getTriMeshBLAS()->geom;
+        auto& geomGroup   = trimesh->getTriMeshBLAS()->geomGroup;
 
         // Build OWLGeom and setup vertex/index buffers for triangle mesh.
-        trimeshAccelData.vertBuffer  = owlDeviceBufferCreate(this->m_owlContext,
-                                                             OWL_FLOAT3,
-                                                             trimeshAccelData.trimesh->getVertices().size(),
-                                                             trimeshAccelData.trimesh->getVertices().data());
-        trimeshAccelData.indexBuffer = owlDeviceBufferCreate(this->m_owlContext,
-                                                             OWL_UINT3,
-                                                             trimeshAccelData.trimesh->getTriangles().size(),
-                                                             trimeshAccelData.trimesh->getTriangles().data());
+        vertBuffer  = owlDeviceBufferCreate(this->m_owlContext,
+                                            OWL_FLOAT3,
+                                            trimesh->getVertices().size(),
+                                            trimesh->getVertices().data());
+        indexBuffer = owlDeviceBufferCreate(this->m_owlContext,
+                                            OWL_UINT3,
+                                            trimesh->getTriangles().size(),
+                                            trimesh->getTriangles().data());
 
-        trimeshAccelData.geom = owlGeomCreate(this->m_owlContext, this->m_owlTriMeshGeomType);
-        owlTrianglesSetVertices(trimeshAccelData.geom, trimeshAccelData.vertBuffer,
-                                trimeshAccelData.trimesh->getVertices().size(), sizeof(vec3f), 0);
-        owlTrianglesSetIndices(trimeshAccelData.geom, trimeshAccelData.indexBuffer,
-                               trimeshAccelData.trimesh->getTriangles().size(), sizeof(Triangle), 0);
+        geom = owlGeomCreate(this->m_owlContext, this->m_owlTriMeshGeomType);
+        owlTrianglesSetVertices(geom, vertBuffer,
+                                trimesh->getVertices().size(), sizeof(vec3f), 0);
+        owlTrianglesSetIndices(geom, indexBuffer,
+                               trimesh->getTriangles().size(), sizeof(Triangle), 0);
 
-        owlGeomSetBuffer(trimeshAccelData.geom, "vertex", trimeshAccelData.vertBuffer);
-        owlGeomSetBuffer(trimeshAccelData.geom, "index", trimeshAccelData.indexBuffer);
+        owlGeomSetBuffer(geom, "vertex", vertBuffer);
+        owlGeomSetBuffer(geom, "index", indexBuffer);
 
         // Build GeometryGroup for triangles.
         // GeometryGroup = Geom(s) + AS
-        trimeshAccelData.geomGroup = owlTrianglesGeomGroupCreate(this->m_owlContext, 1, &trimeshAccelData.geom);
-        owlGroupBuildAccel(trimeshAccelData.geomGroup);
+        geomGroup = owlTrianglesGeomGroupCreate(this->m_owlContext, 1, &geom);
+        owlGroupBuildAccel(geomGroup);
+    }
+}
 
-        groupTLAS.push_back(trimeshAccelData.geomGroup);
+void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes)
+{
+    std::vector<OWLGroup> groupTLAS;
+    groupTLAS.reserve(trimeshes.size());
+
+    for (const auto& trimesh : trimeshes)
+    {
+        // BLAS must be built before.
+        assert(trimesh->getTriMeshBLAS()->vertBuffer && trimesh->getTriMeshBLAS()->indexBuffer &&
+               trimesh->getTriMeshBLAS()->geom && trimesh->getTriMeshBLAS()->geomGroup);
+
+        groupTLAS.push_back(trimesh->getTriMeshBLAS()->geomGroup);
     }
 
-    // Create world TLAS.
-    // Our method could be invoked multiple times, so cleanup old GeomGroup first.
-    if (this->m_worldTLAS != nullptr)
-        owlGroupRelease(this->m_worldTLAS);
-    this->m_worldTLAS = owlInstanceGroupCreate(this->m_owlContext, groupTLAS.size(), groupTLAS.data());
-    assert(this->m_worldTLAS);
+    // We have a RAII TLASDataSet type.
+    {
+        OWLGroup worldTLAS = owlInstanceGroupCreate(this->m_owlContext, groupTLAS.size(), groupTLAS.data());
+        this->m_worldTLAS  = std::make_unique<TLASDataSet>(worldTLAS);
+    }
+    assert(this->m_worldTLAS->m_worldTLAS != nullptr);
 
     // Build world TLAS.
-    owlGroupBuildAccel(this->m_worldTLAS);
+    owlGroupBuildAccel(this->m_worldTLAS->m_worldTLAS);
 
     // Bind world TLAS.
-    owlRayGenSetGroup(this->m_raygen, "world", this->m_worldTLAS);
+    owlRayGenSetGroup(this->m_raygen, "world", this->m_worldTLAS->m_worldTLAS);
 
     // ##################################################################
     // build *SBT* required to trace the groups

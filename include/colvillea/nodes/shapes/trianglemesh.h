@@ -1,8 +1,10 @@
 #pragma once
 
 #include <librender/nodebase/shape.h>
+#include <librender/asdataset.h>
 
 #include <vector>
+#include <memory>
 
 #include <owl/common/math/vec.h>
 
@@ -15,6 +17,9 @@ using vec3ui = owl::common::vec3ui;
 
 namespace core
 {
+
+class Scene;
+
 /**
  * \brief
  *    Triangle is a helper structure storing indices to 
@@ -37,8 +42,10 @@ class TriangleMesh : public Shape
 public:
     TriangleMesh(const std::vector<vec3f>& verts, const std::vector<Triangle>& tris) :
         Shape {ShapeType::TriangleMesh},
-        m_vertices{verts}, m_triangles{tris}
+        m_vertices{verts},
+        m_triangles{tris}
     {
+        this->m_dataSet = std::make_unique<TriMeshBLAS>(this);
     }
 
     TriangleMesh(std::vector<vec3f>&& verts, std::vector<Triangle>&& tris) :
@@ -46,6 +53,7 @@ public:
         m_vertices{std::move(verts)},
         m_triangles{std::move(tris)}
     {
+        this->m_dataSet = std::make_unique<TriMeshBLAS>(this);
     }
 
     const std::vector<vec3f>& getVertices() const
@@ -58,13 +66,38 @@ public:
         return this->m_triangles;
     }
 
+    std::unique_ptr<TriMeshBLAS>& getTriMeshBLAS()
+    {
+        return this->m_dataSet;
+    }
+
+    const std::unique_ptr<TriMeshBLAS>& getTriMeshBLAS() const
+    {
+        return this->m_dataSet;
+    }
+
+    // If we support updating trianglemesh, we should notify our
+    // scene that this shape is edited.
+    /*void updateVertices(const std::vector<vec3f>& verts)
+    {
+        this->m_vertices = verts;
+        this->m_scene->m_editActionLists.addAction(SceneEditAction::EditActionType::ShapeEdited);
+    }*/
+
 private:
+    /// Viewing pointer to the scene so that we could notify
+    /// some shape in the scene is changing.
+    //Scene* m_scene{nullptr};
+
     /// Vertex resources for the triangle mesh.
     /// Vertex positions.
     std::vector<vec3f>    m_vertices;
 
     /// Index to vertex resources composing triangles.
     std::vector<Triangle> m_triangles;
+
+    /// BLAS for triangle mesh.
+    std::unique_ptr<TriMeshBLAS> m_dataSet;
 };
 } // namespace core
 } // namespace colvillea
