@@ -14,6 +14,14 @@ enum class ShapeType : uint32_t
     TriangleMesh
 };
 
+/**
+ * \brief 
+ *    Shape is a base class for all supported geometry shapes in 
+ * the renderer. Note that Shape is all about geometry shape data
+ * and should not contain any properties of materials. Besides,
+ * shape should also associate with its hardware acceleration
+ * structures.
+ */
 class Shape
 {
 public:

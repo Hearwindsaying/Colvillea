@@ -12,6 +12,8 @@ namespace delegate
 {
 std::unique_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube()
 {
+    spdlog::info("Loading a default cube.");
+
     const int NUM_VERTICES = 8;
     vec3f     vertices[NUM_VERTICES] =
         {
@@ -33,6 +35,8 @@ std::unique_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube()
 
 std::vector<std::unique_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const std::filesystem::path& meshfile)
 {
+    spdlog::info("Loading triangle meshes from {} by assimp.", meshfile.string().c_str());
+
     Assimp::Importer importer;
     const aiScene*   scene = importer.ReadFile(meshfile.string().c_str(),
                                                aiProcess_Triangulate |
