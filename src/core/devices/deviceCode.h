@@ -17,38 +17,39 @@
 #pragma once
 
 #include <owl/owl.h>
-#include <owl/common/math/vec.h>
 
-using namespace owl;
+#include <libkernel/base/owldefs.h>
+#include <libkernel/base/ray.h>
+
+
+namespace colvillea
+{
+namespace kernel
+{
 
 /* variables for the triangle mesh geometry */
 struct TrianglesGeomData
 {
-  /*! array/buffer of vertex indices */
-  vec3i *index;
-  /*! array/buffer of vertex positions */
-  vec3f *vertex;
+    /*! array/buffer of vertex indices */
+    vec3i* index;
+    /*! array/buffer of vertex positions */
+    vec3f* vertex;
 };
 
 /* variables for the ray generation program */
 struct RayGenData
 {
-  uint32_t *fbPtr;
-  vec2i  fbSize;
-  OptixTraversableHandle world;
+    OptixTraversableHandle world;
 
-  struct {
-    vec3f pos;
-    vec3f dir_00;
-    vec3f dir_du;
-    vec3f dir_dv;
-  } camera;
+    //colvillea::kernel::SOAProxy<colvillea::kernel::RayWork> rayworkBuff;
+    float3* o;
+    float*  mint;
+    float3* d;
+    float*  maxt;
+    int*    pixelIndex;
+
+    SOAProxyQueue<EvalShadingWork>* evalShadingWorkQueue;
+    SOAProxyQueue<RayEscapedWork>*  rayEscapedWorkQueue;
 };
-
-/* variables for the miss program */
-struct MissProgData
-{
-  vec3f  color0;
-  vec3f  color1;
-};
-
+} // namespace kernel
+} // namespace colvillea

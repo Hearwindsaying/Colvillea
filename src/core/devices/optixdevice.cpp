@@ -1,5 +1,7 @@
 #include "optixdevice.h"
 
+#include <cuda_runtime.h>
+
 #include <nodes/shapes/trianglemesh.h>
 
 #include <spdlog/spdlog.h>
@@ -8,12 +10,8 @@ extern "C" char optix_ptx[];
 
 // our device-side data structures
 #include "deviceCode.h"
-// external helper stuff for image output
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb/stb_image_write.h"
 
-const char* outFileName = "s01-simpleTriangles.png";
-const vec2i fbSize(800, 600);
+#include "cudacommon.h"
 
 namespace colvillea
 {
@@ -28,21 +26,15 @@ OptiXDevice::OptiXDevice() :
     this->m_owlModule = owlModuleCreate(this->m_owlContext, optix_ptx);
     spdlog::info("Successfully created OptiX-Owl module!");
 
-
-    const vec3f lookFrom(-4.f, -3.f, -2.f);
-    const vec3f lookAt(0.f, 0.f, 0.f);
-    const vec3f lookUp(0.f, 1.f, 0.f);
-    const float cosFovy = 0.66f;
-
     // -------------------------------------------------------
     // declare geometry type
     // -------------------------------------------------------
     OWLVarDecl trianglesGeomVars[] = {
-        {"index", OWL_BUFPTR, OWL_OFFSETOF(TrianglesGeomData, index)},
-        {"vertex", OWL_BUFPTR, OWL_OFFSETOF(TrianglesGeomData, vertex)}};
+        {"index", OWL_BUFPTR, OWL_OFFSETOF(kernel::TrianglesGeomData, index)},
+        {"vertex", OWL_BUFPTR, OWL_OFFSETOF(kernel::TrianglesGeomData, vertex)}};
     this->m_owlTriMeshGeomType = owlGeomTypeCreate(this->m_owlContext,
                                                    OWL_TRIANGLES,
-                                                   sizeof(TrianglesGeomData),
+                                                   sizeof(kernel::TrianglesGeomData),
                                                    trianglesGeomVars, 2);
     owlGeomTypeSetClosestHit(this->m_owlTriMeshGeomType, /* GeomType */
                              0,                          /* Ray type*/
@@ -57,58 +49,37 @@ OptiXDevice::OptiXDevice() :
     // -------------------------------------------------------
     // set up miss prog
     // -------------------------------------------------------
-    OWLVarDecl missProgVars[] = {
-        {"color0", OWL_FLOAT3, OWL_OFFSETOF(MissProgData, color0)},
-        {"color1", OWL_FLOAT3, OWL_OFFSETOF(MissProgData, color1)},
-        {/* sentinel to mark end of list */}};
     // ----------- create object  ----------------------------
     this->m_miss = owlMissProgCreate(this->m_owlContext,
                                      this->m_owlModule,
                                      "miss",
-                                     sizeof(MissProgData),
-                                     missProgVars,
-                                     -1);
-
-    // ----------- set variables  ----------------------------
-    owlMissProgSet3f(this->m_miss, "color0", owl3f{.8f, 0.f, 0.f});
-    owlMissProgSet3f(this->m_miss, "color1", owl3f{.8f, .8f, .8f});
+                                     0,
+                                     nullptr,
+                                     0);
 
     // -------------------------------------------------------
     // set up ray gen program
     // -------------------------------------------------------
     OWLVarDecl rayGenVars[] = {
-        {"fbPtr", OWL_BUFPTR, OWL_OFFSETOF(RayGenData, fbPtr)},
-        {"fbSize", OWL_INT2, OWL_OFFSETOF(RayGenData, fbSize)},
-        {"world", OWL_GROUP, OWL_OFFSETOF(RayGenData, world)},
-        {"camera.pos", OWL_FLOAT3, OWL_OFFSETOF(RayGenData, camera.pos)},
-        {"camera.dir_00", OWL_FLOAT3, OWL_OFFSETOF(RayGenData, camera.dir_00)},
-        {"camera.dir_du", OWL_FLOAT3, OWL_OFFSETOF(RayGenData, camera.dir_du)},
-        {"camera.dir_dv", OWL_FLOAT3, OWL_OFFSETOF(RayGenData, camera.dir_dv)},
+        {"world", OWL_GROUP, OWL_OFFSETOF(kernel::RayGenData, world)},
+
+        // RayBuffer.
+        {"o", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, o)},
+        {"mint", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, mint)},
+        {"d", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, d)},
+        {"maxt", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, maxt)},
+        {"pixelIndex", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, pixelIndex)},
+
+        {"evalShadingWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, evalShadingWorkQueue)},
+        {"rayEscapedWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, rayEscapedWorkQueue)},
+
         {/* sentinel to mark end of list */}};
 
     // ----------- create object  ----------------------------
     this->m_raygen = owlRayGenCreate(this->m_owlContext, this->m_owlModule, "raygen",
-                                     sizeof(RayGenData),
+                                     sizeof(kernel::RayGenData),
                                      rayGenVars, -1);
 
-    // ----------- compute variable values  ------------------
-    vec3f camera_pos = lookFrom;
-    vec3f camera_d00 = normalize(lookAt - lookFrom);
-    float aspect     = fbSize.x / float(fbSize.y);
-    vec3f camera_ddu = cosFovy * aspect * normalize(cross(camera_d00, lookUp));
-    vec3f camera_ddv = cosFovy * normalize(cross(camera_ddu, camera_d00));
-    camera_d00 -= 0.5f * camera_ddu;
-    camera_d00 -= 0.5f * camera_ddv;
-
-    // ----------- set variables  ----------------------------
-    this->m_framebuffer = owlHostPinnedBufferCreate(this->m_owlContext, OWL_INT, fbSize.x * fbSize.y);
-    owlRayGenSetBuffer(this->m_raygen, "fbPtr", this->m_framebuffer);
-    owlRayGenSet2i(this->m_raygen, "fbSize", (const owl2i&)fbSize);
-
-    owlRayGenSet3f(this->m_raygen, "camera.pos", (const owl3f&)camera_pos);
-    owlRayGenSet3f(this->m_raygen, "camera.dir_00", (const owl3f&)camera_d00);
-    owlRayGenSet3f(this->m_raygen, "camera.dir_du", (const owl3f&)camera_ddu);
-    owlRayGenSet3f(this->m_raygen, "camera.dir_dv", (const owl3f&)camera_ddv);
 
     // Programs and pipelines only need to be bound once.
     // SBT should be built on demand.
@@ -123,7 +94,6 @@ OptiXDevice::~OptiXDevice()
     //owlGeomTypeRelease()
 
     owlRayGenRelease(this->m_raygen);
-    owlBufferRelease(this->m_framebuffer);
     // missing miss.
 
     owlModuleRelease(this->m_owlModule);
@@ -202,22 +172,35 @@ void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& tr
     owlBuildSBT(this->m_owlContext);
 }
 
-void OptiXDevice::launchTraceRayKernel()
+void OptiXDevice::bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&              rayworkBufferSOA,
+                                    const kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueueDevicePtr,
+                                    const kernel::SOAProxyQueue<kernel::RayEscapedWork>*  rayEscapedQueueDevicePtr)
+{
+    owlRayGenSet1ul(this->m_raygen, "o", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.o));
+    owlRayGenSet1ul(this->m_raygen, "mint", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.mint));
+    owlRayGenSet1ul(this->m_raygen, "d", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.d));
+    owlRayGenSet1ul(this->m_raygen, "maxt", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.maxt));
+    owlRayGenSet1ul(this->m_raygen, "pixelIndex", reinterpret_cast<uint64_t>(rayworkBufferSOA.pixelIndex));
+
+    assert(evalShadingWorkQueueDevicePtr != nullptr && rayEscapedQueueDevicePtr != nullptr);
+    owlRayGenSet1ul(this->m_raygen, "evalShadingWorkQueue", reinterpret_cast<uint64_t>(evalShadingWorkQueueDevicePtr));
+    owlRayGenSet1ul(this->m_raygen, "rayEscapedWorkQueue", reinterpret_cast<uint64_t>(rayEscapedQueueDevicePtr));
+
+    owlBuildSBT(this->m_owlContext);
+}
+
+
+void OptiXDevice::launchTraceRayKernel(size_t nItems)
 {
     // ##################################################################
     // now that everything is ready: launch it ....
     // ##################################################################
 
     spdlog::info("launching ...");
-    owlRayGenLaunch2D(this->m_raygen, fbSize.x, fbSize.y);
+    // OWL does not support 1D launching...
+    owlRayGenLaunch2D(this->m_raygen, nItems, 1);
 
-    spdlog::info("done with launch, writing picture ...");
-    // for host pinned memory it doesn't matter which device we query...
-    const uint32_t* fb = (const uint32_t*)owlBufferGetPointer(this->m_framebuffer, 0);
-    assert(fb);
-    stbi_write_png(outFileName, fbSize.x, fbSize.y, 4,
-                   fb, fbSize.x * sizeof(uint32_t));
-    spdlog::info("written rendered frame buffer to file {}", outFileName);
+    CHECK_CUDA_CALL(cudaDeviceSynchronize());
 }
 } // namespace core
 } // namespace colvillea

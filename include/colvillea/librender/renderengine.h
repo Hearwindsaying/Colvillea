@@ -13,7 +13,7 @@ namespace core
 /**
  * \brief
  *    RenderEngine is a bridge between Scene and Integrator, which 
- * communicates and transfer data between these two objects. \Scene
+ * communicates and transfers data between these two objects. \Scene
  * class is about managing host side scene-wide data structures for 
  * rendering, which takes care of adding/removing shapes etc. 
  * \Integrator is all about launching ray tracing kernels to 

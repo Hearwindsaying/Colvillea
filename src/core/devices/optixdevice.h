@@ -5,6 +5,8 @@
 #include <librender/device.h>
 #include <librender/asdataset.h>
 
+#include <libkernel/base/ray.h>
+
 #include <owl/owl.h>
 
 namespace colvillea
@@ -34,11 +36,16 @@ public:
     /// scene, or it is just changed.
     void buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimeshes);
 
+    /// Create and build a TLASDataSet out of trimeshes.
     void buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes);
+
+    void bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>& rayworkBufferSOA,
+                           const kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueueDevicePtr,
+                           const kernel::SOAProxyQueue<kernel::RayEscapedWork>* rayEscapedQueueDevicePtr);
 
     /// Launch OptiX intersection kernel to trace rays and read back
     /// intersection information.
-    void launchTraceRayKernel();
+    void launchTraceRayKernel(size_t nItems);
 
 
 private:
@@ -46,6 +53,7 @@ private:
     {
         WrappedOWLContext(int32_t* requestIds, int numDevices)
         {
+            spdlog::info("Successfully created OptiX-Owl context!");
             this->owlContext = owlContextCreate(requestIds, numDevices);
         }
 
@@ -90,9 +98,6 @@ private:
 
     /// Accelerator data set.
     std::unique_ptr<TLASDataSet> m_worldTLAS;
-
-    /// Temporary
-    OWLBuffer m_framebuffer{nullptr};
 };
 } // namespace core
 } // namespace colvillea

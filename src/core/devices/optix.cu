@@ -14,39 +14,60 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#ifdef __INTELLISENSE__
+#    define __CUDACC__
+#endif
+
 #include "deviceCode.h"
 #include <optix_device.h>
+
+#include <owl/owl_device.h>
+
+namespace colvillea
+{
+namespace kernel
+{
+struct ClosestHitPayload
+{
+    vec3f    hitNormal;
+    vec3f    rayDirection;
+    uint32_t missed{0};
+};
 
 OPTIX_RAYGEN_PROGRAM(raygen)
 ()
 {
-    const RayGenData& self    = owl::getProgramData<RayGenData>();
-    const vec2i       pixelID = owl::getLaunchIndex();
-    if (pixelID == owl::vec2i(0))
-    {
-        printf("%sHello OptiX From your First RayGen Program%s\n",
-               OWL_TERMINAL_CYAN,
-               OWL_TERMINAL_DEFAULT);
-    }
+    const RayGenData& raygenData = owl::getProgramData<RayGenData>();
 
-    const vec2f screen = (vec2f(pixelID) + vec2f(.5f)) / vec2f(self.fbSize);
-    owl::Ray    ray;
-    ray.origin    = self.camera.pos;
-    ray.direction = normalize(self.camera.dir_00 + screen.u * self.camera.dir_du + screen.v * self.camera.dir_dv);
+    int jobId = optixGetLaunchIndex().x;
 
-    vec3f color;
-    owl::traceRay(/*accel to trace against*/ self.world,
+    // Fetching ray from ray buffer.
+    owl::Ray ray;
+    ray.origin    = raygenData.o[jobId];
+    ray.tmin      = raygenData.mint[jobId];
+    ray.direction = raygenData.d[jobId];
+    ray.tmax      = raygenData.maxt[jobId];
+
+    // Trace rays.
+    ClosestHitPayload payload{};
+    owl::traceRay(/*accel to trace against*/ raygenData.world,
                   /*the ray to trace*/ ray,
-                  /*prd*/ color);
+                  /*prd*/ payload);
 
-    const int fbOfs   = pixelID.x + self.fbSize.x * pixelID.y;
-    self.fbPtr[fbOfs] = owl::make_rgba(color);
+    if (payload.missed == 1)
+    {
+        raygenData.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{jobId});
+    }
+    else
+    {
+        raygenData.evalShadingWorkQueue->pushWorkItem(EvalShadingWork{payload.hitNormal, payload.rayDirection, jobId});
+    }
 }
 
 OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 ()
 {
-    vec3f& prd = owl::getPRD<vec3f>();
+    ClosestHitPayload& payload = owl::getPRD<ClosestHitPayload>();
 
     const TrianglesGeomData& self = owl::getProgramData<TrianglesGeomData>();
 
@@ -58,18 +79,15 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
     const vec3f& C      = self.vertex[index.z];
     const vec3f  Ng     = normalize(cross(B - A, C - A));
 
-    const vec3f rayDir = optixGetWorldRayDirection();
-    prd                = (.2f + .8f * fabs(dot(rayDir, Ng))) * vec3f(0.0,0.0,0.5);
+    payload.hitNormal    = Ng;
+    payload.rayDirection = optixGetWorldRayDirection();
 }
 
 OPTIX_MISS_PROGRAM(miss)
 ()
 {
-    const vec2i pixelID = owl::getLaunchIndex();
-
-    const MissProgData& self = owl::getProgramData<MissProgData>();
-
-    vec3f& prd     = owl::getPRD<vec3f>();
-    int    pattern = (pixelID.x / 8) ^ (pixelID.y / 8);
-    prd            = (pattern & 1) ? self.color1 : self.color0;
+    ClosestHitPayload& payload = owl::getPRD<ClosestHitPayload>();
+    payload.missed             = 1;
 }
+} // namespace kernel
+} // namespace colvillea

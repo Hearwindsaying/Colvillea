@@ -29,6 +29,10 @@ if (NOT CMAKE_BUILD_TYPE)
     set_property (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
 
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES 86)
+endif()
+
 project(colvillea LANGUAGES CXX CUDA)
 
 ##########################################################
@@ -79,7 +83,9 @@ foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
         # We just need to add compiler flag "-fsanitize=address" and ASan libraries will be linked automatically
         # since Visual Studio 16.9 Preview 3.
         # See also: https://devblogs.microsoft.com/cppblog/addresssanitizer-asan-for-windows-with-msvc/#compiling-with-asan-from-the-console.
-            target_compile_options(PublicBuildSettings INTERFACE -fsanitize=address)
+            target_compile_options(PublicBuildSettings 
+                                    INTERFACE 
+                                        $<$<COMPILE_LANGUAGE:CXX>:-fsanitize=address>)
         # This is not needed anymore: LNK4044: unrecognized option '/fsanitize=address'; ignored
         # target_link_options(PublicBuildSettings INTERFACE -fsanitize=address) 
 
@@ -119,6 +125,10 @@ set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_EXTENSIONS OFF)
 
+# Specify CUDA C++ language standard.
+set (CMAKE_CUDA_STANDARD 17)
+set (CMAKE_CUDA_EXTENSIONS OFF)
+
 # Add external libraries.
 add_subdirectory(ext)
 
@@ -126,7 +136,7 @@ add_subdirectory(ext)
 add_subdirectory(tests)
 
 # Add subdirectories here.
-# add_subdirectory(src/kernels)
 add_subdirectory(src/core)
 add_subdirectory(src/colvillea)
 add_subdirectory(src/delegate)
+add_subdirectory(src/kernel)
