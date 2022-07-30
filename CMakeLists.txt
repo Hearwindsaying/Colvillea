@@ -3,7 +3,8 @@
 ##########################################################
 
 # This is required for better CUDA CMake support.
-cmake_minimum_required (VERSION 3.17 FATAL_ERROR)
+# 3.18 for CMP0104 Policy support, we need CMAKE_CUDA_ARCHITECTURES.
+cmake_minimum_required (VERSION 3.18 FATAL_ERROR)
 
 # Group CMake predefined projects to folder
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -30,7 +31,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES 86)
+  set(CMAKE_CUDA_ARCHITECTURES 86-real)
 endif()
 
 project(colvillea LANGUAGES CXX CUDA)
