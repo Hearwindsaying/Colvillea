@@ -20,6 +20,9 @@ int main(int argc, char* argv[])
 
     std::unique_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::WavefrontPathTracing);
     std::unique_ptr<core::Scene>        pScene        = core::Scene::createScene();
+
+    core::Scene* pSceneViewer = pScene.get();
+
     pScene->addTriangleMeshes(std::move(objMeshes));
     pScene->addTriangleMesh(std::move(cubeMesh));
     std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(std::move(ptIntegrator), std::move(pScene));
@@ -27,6 +30,9 @@ int main(int argc, char* argv[])
     pRenderEngine->startRendering();
     pRenderEngine->endRendering();
 
+    //pSceneViewer->addTriangleMesh(std::move(cubeMesh));
+    pRenderEngine->startRendering();
+    pRenderEngine->endRendering();
 
     return 0;
 }

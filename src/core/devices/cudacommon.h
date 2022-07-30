@@ -1,5 +1,7 @@
 #pragma once
 
+#include <windows.h>
+
 #include <cuda_runtime.h>
 
 #include <spdlog/spdlog.h>
@@ -15,7 +17,12 @@ namespace core
         {                                                                       \
             spdlog::critical("CUDA call {} failed with code {} at line {}: {}", \
                              #call, rc, __LINE__, cudaGetErrorString(rc));      \
+            if (IsDebuggerPresent())                                            \
+            {                                                                   \
+                __debugbreak();                                                 \
+            }                                                                   \
+            exit(-1);                                                           \
         }                                                                       \
     }
-}
+} // namespace core
 } // namespace colvillea

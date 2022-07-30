@@ -83,5 +83,16 @@ __global__ void evaluateShading(SOAProxyQueue<EvalShadingWork>* evalShadingWorkQ
         vec3f(0.0, 0.0, 0.5));
 }
 
+__global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>* escapedRayQueue,
+                                    SOAProxyQueue<EvalShadingWork>* evalShadingWorkQueue)
+{
+    int jobId = blockIdx.x * blockDim.x + threadIdx.x;
+    if (jobId > 0)
+        return;
+
+    escapedRayQueue->resetQueueSize();
+    evalShadingWorkQueue->resetQueueSize();
+}
+
 } // namespace kernel
 } // namespace colvillea

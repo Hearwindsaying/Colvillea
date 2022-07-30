@@ -74,6 +74,10 @@ void WavefrontPathTracingIntegrator::render()
                                                     this->m_queueCapacity,
                                                     this->m_outputBuff->getDevicePtrAs<uint32_t*>());
 
+    // Reset Queues.
+    this->m_cudaDevice->launchResetQueuesKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
+                                                this->m_evalShadingWorkQueueBuff.getDevicePtr());
+
     // Writing output to disk.
     const char* outFileName = "s01-wavefrontSimpleTriangles.png";
     spdlog::info("done with launch, writing picture ...");

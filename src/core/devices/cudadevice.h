@@ -56,6 +56,13 @@ public:
         this->launchKernelSync(&kernel::evaluateShading, nItems, evalShadingWorkQueue, outputBuffer);
     }
 
+    void launchResetQueuesKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>* escapedRayQueue,
+        kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueue)
+    {
+        assert(evalShadingWorkQueue != nullptr && evalShadingWorkQueue != nullptr);
+        this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalShadingWorkQueue);
+    }
+
 
 protected:
     /**
@@ -68,6 +75,17 @@ protected:
         int blockSize = 256;
         int gridSize  = (nItems + blockSize - 1) / blockSize;
         kernel<<<gridSize, blockSize>>>(std::forward<Args>(args)...);
+        CHECK_CUDA_CALL(cudaStreamSynchronize(0));
+    }
+
+    /**
+     * \brief
+     *    Helper function for launching 1x1 cuda kernel function.
+     */
+    template <typename Kernel, typename... Args>
+    void launchKernel1x1Sync(Kernel kernel, Args... args)
+    {
+        kernel<<<1, 1>>>(std::forward<Args>(args)...);
         CHECK_CUDA_CALL(cudaStreamSynchronize(0));
     }
 };

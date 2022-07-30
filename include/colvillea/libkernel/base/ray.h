@@ -298,6 +298,15 @@ public:
         //return this->queueSize.load(cuda::std::memory_order_relaxed);
         return this->queueSize;
     }
+
+    /**
+     * \brief
+     *    Reset Queue size.
+     */
+    __device__ void resetQueueSize()
+    {
+        this->queueSize = 0;
+    }
 };
 
 

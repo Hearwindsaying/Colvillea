@@ -9,6 +9,12 @@ set(INTERFACE_INTEGRATORS
     ${KERNEL_INCLUDE_DIR}/libkernel/integrators/raygeneration.cuh
 )
 
+set_source_files_properties(
+    ${INTERFACE_INTEGRATORS}
+
+    PROPERTIES HEADER_FILE_ONLY TRUE
+)
+
 set(SOURCE_INTEGRATORS
     integrators/raygeneration.cu
 )
