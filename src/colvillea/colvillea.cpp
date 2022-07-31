@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
     auto cubeMesh  = delegate::MeshImporter::loadDefaultCube();
 
-    std::unique_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::WavefrontPathTracing);
+    std::unique_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::InteractiveWavefrontPathTracing, 800, 600);
     std::unique_ptr<core::Scene>        pScene        = core::Scene::createScene();
 
     core::Scene* pSceneViewer = pScene.get();
@@ -27,12 +27,14 @@ int main(int argc, char* argv[])
     pScene->addTriangleMesh(std::move(cubeMesh));
     std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(std::move(ptIntegrator), std::move(pScene));
 
-    pRenderEngine->startRendering();
-    pRenderEngine->endRendering();
+    /*pRenderEngine->startRendering();
+    pRenderEngine->endRendering();*/
 
-    //pSceneViewer->addTriangleMesh(std::move(cubeMesh));
-    pRenderEngine->startRendering();
-    pRenderEngine->endRendering();
+    ////pSceneViewer->addTriangleMesh(std::move(cubeMesh));
+    //pRenderEngine->startRendering();
+    //pRenderEngine->endRendering();
+
+    pRenderEngine->runInteractiveRendering();
 
     return 0;
 }

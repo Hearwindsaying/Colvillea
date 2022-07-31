@@ -37,6 +37,8 @@ public:
     /// Done with rendering.
     void endRendering() {}
 
+    void runInteractiveRendering();
+
 protected:
     void compileAccelStructs();
 

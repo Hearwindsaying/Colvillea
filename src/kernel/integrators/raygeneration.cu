@@ -20,31 +20,23 @@ __host__ __device__ float3 make_float3(vec3f val)
     return float3{val.x, val.y, val.z};
 }
 
-__global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff, int nItems)
+__global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
+                                   int               nItems,
+                                   uint32_t          width,
+                                   uint32_t          height,
+                                   vec3f             camera_pos,
+                                   vec3f             camera_d00,
+                                   vec3f             camera_ddu,
+                                   vec3f             camera_ddv)
 {
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
     if (jobId >= nItems)
         return;
 
-    vec2ui pixelPosi{jobId % width, jobId / width};
+    vec2ui    pixelPosi{jobId % width, jobId / width};
     const int pixelIndex = jobId;
 
     const vec2f screen = (vec2f{pixelPosi} + vec2f{.5f, .5f}) / vec2f(width, height);
-    
-    // temp
-    const vec3f lookFrom(-4.f, -3.f, -2.f);
-    const vec3f lookAt(0.f, 0.f, 0.f);
-    const vec3f lookUp(0.f, 1.f, 0.f);
-    const float cosFovy = 0.66f;
-
-    // ----------- compute variable values  ------------------
-    vec3f camera_pos = lookFrom;
-    vec3f camera_d00 = normalize(lookAt - lookFrom);
-    float aspect     = width / float(height);
-    vec3f camera_ddu = cosFovy * aspect * normalize(cross(camera_d00, lookUp));
-    vec3f camera_ddv = cosFovy * normalize(cross(camera_ddu, camera_d00));
-    camera_d00 -= 0.5f * camera_ddu;
-    camera_d00 -= 0.5f * camera_ddv;
 
     Ray ray;
     ray.o = make_float3(camera_pos);
@@ -53,7 +45,7 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff, int nItems)
     rayworkBuff.setVar(jobId, RayWork{ray, pixelIndex});
 }
 
-__global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQueue, uint32_t *outputBuffer)
+__global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQueue, uint32_t* outputBuffer, uint32_t width, uint32_t height)
 {
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
     if (jobId >= escapedRayQueue->size())
@@ -79,11 +71,10 @@ __global__ void evaluateShading(SOAProxyQueue<EvalShadingWork>* evalShadingWorkQ
 
     outputBuffer[evalShadingWork.pixelIndex] =
         owl::make_rgba(
-            .2f + .8f * fabs(dot(vec3f(evalShadingWork.rayDirection), vec3f(evalShadingWork.ng))) *
-        vec3f(0.0, 0.0, 0.5));
+            .2f + .8f * fabs(dot(vec3f(evalShadingWork.rayDirection), vec3f(evalShadingWork.ng))) * vec3f(0.0, 0.0, 0.5));
 }
 
-__global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>* escapedRayQueue,
+__global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*  escapedRayQueue,
                                     SOAProxyQueue<EvalShadingWork>* evalShadingWorkQueue)
 {
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
