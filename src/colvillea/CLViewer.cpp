@@ -272,7 +272,7 @@ void CLViewer::draw()
         glVertex3f((float)fbSize.x, 0.f, 0.f);
     }
     glEnd();
-    
+
     this->m_pRenderEngine->unmapFramebuffer();
 }
 

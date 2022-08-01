@@ -57,8 +57,9 @@ protected:
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>  m_rayEscapedWorkQueueBuff;
 
 private:
-    ///std::unique_ptr<PinnedHostDeviceBuffer> m_outputBuff;
-    uint32_t* m_fbPointer{nullptr};
+    //ManagedDeviceBuffer m_outputBuff;
+    std::unique_ptr<DeviceBuffer> m_outputBuff;
+
     cudaGraphicsResource_t m_cuDisplayTexture{0};
 
     uint32_t m_width{0}, m_height{0};

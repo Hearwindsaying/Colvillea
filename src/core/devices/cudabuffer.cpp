@@ -38,5 +38,16 @@ PinnedHostDeviceBuffer::~PinnedHostDeviceBuffer()
     CHECK_CUDA_CALL(cudaFreeHost(this->m_devicePtr));
 }
 
+ManagedDeviceBuffer::ManagedDeviceBuffer(size_t bufferSizeInBytes)
+{
+    CHECK_CUDA_CALL(cudaMallocManaged(&this->m_devicePtr, bufferSizeInBytes));
+    assert(this->m_devicePtr != nullptr);
+}
+
+ManagedDeviceBuffer::~ManagedDeviceBuffer()
+{
+    CHECK_CUDA_CALL(cudaFree(this->m_devicePtr));
+}
+
 } // namespace core
 } // namespace colvillea

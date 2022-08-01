@@ -161,5 +161,38 @@ private:
     void* m_devicePtr{nullptr};
 };
 
+/**
+ * \brief
+ *    ManagedDeviceBuffer represents CUDA managed memory.
+ */
+class ManagedDeviceBuffer : public DeviceBufferBase
+{
+public:
+    ManagedDeviceBuffer(size_t bufferSizeInBytes);
+
+    ~ManagedDeviceBuffer();
+
+    /**
+     * \brief
+     *    Get back the device pointer which could be safely passed to the kernel.
+     */
+    void* getDevicePtr() const noexcept
+    {
+        assert(this->m_devicePtr != nullptr);
+        return this->m_devicePtr;
+    }
+
+    template <typename T>
+    T getDevicePtrAs() const noexcept
+    {
+        static_assert(std::is_pointer_v<T>, "T must be a pointer type!");
+        return static_cast<T>(this->getDevicePtr());
+    }
+
+private:
+    /// Device pointer which could be safely passed to the kernel.
+    void* m_devicePtr{nullptr};
+};
+
 } // namespace core
 } // namespace colvillea

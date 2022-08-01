@@ -26,11 +26,12 @@ namespace core
 {
 WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, uint32_t height) :
     Integrator{IntegratorType::WavefrontPathTracing},
-    m_width {width},
-    m_height {height},
+    m_width{width},
+    m_height{height},
     m_queueCapacity{static_cast<uint32_t>(width * height)},
     m_evalShadingWorkQueueBuff{m_queueCapacity},
-    m_rayEscapedWorkQueueBuff{m_queueCapacity}
+    m_rayEscapedWorkQueueBuff{m_queueCapacity}/*,
+    m_outputBuff{width * height * sizeof(uint32_t)}*/
 {
     std::unique_ptr<Device> pDevice     = Device::createDevice(DeviceType::OptiXDevice);
     std::unique_ptr<Device> pCUDADevice = Device::createDevice(DeviceType::CUDADevice);
@@ -40,8 +41,7 @@ WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, u
     // Init rays buffer.
     // TODO: Change sizeof(kernel::Ray) to helper traits.
     this->m_rayworkBuff = std::make_unique<DeviceBuffer>(width * height * kernel::SOAProxy<kernel::RayWork>::StructureSize);
-
-    //this->m_outputBuff = std::make_unique<PinnedHostDeviceBuffer>(width * height * sizeof(uint32_t));
+    this->m_outputBuff  = std::make_unique<DeviceBuffer>(width * height * sizeof(uint32_t));
 }
 WavefrontPathTracingIntegrator::~WavefrontPathTracingIntegrator()
 {
@@ -83,17 +83,17 @@ void WavefrontPathTracingIntegrator::render()
     assert(rayworkSOA.arraySize == workItems);
     this->m_optixDevice->launchTraceRayKernel(workItems);
 
-    assert(this->m_fbPointer != nullptr);
-
     // Handling missed rays.
     this->m_cudaDevice->launchEvaluateEscapedRaysKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
                                                         this->m_queueCapacity,
-                                                        this->m_fbPointer, this->m_width, this->m_height);
+                                                        this->m_outputBuff->getDevicePtrAs<uint32_t*>(),
+                                                        this->m_width,
+                                                        this->m_height);
 
     // Shading.
     this->m_cudaDevice->launchEvaluateShadingKernel(this->m_evalShadingWorkQueueBuff.getDevicePtr(),
                                                     this->m_queueCapacity,
-                                                    this->m_fbPointer);
+                                                    this->m_outputBuff->getDevicePtrAs<uint32_t*>());
 
     // Reset Queues.
     this->m_cudaDevice->launchResetQueuesKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
@@ -112,13 +112,12 @@ void WavefrontPathTracingIntegrator::render()
 
 void WavefrontPathTracingIntegrator::resize(uint32_t width, uint32_t height)
 {
-    this->m_width = width;
+    this->m_width  = width;
     this->m_height = height;
 
     // Resize framebuffer.
-    if (this->m_fbPointer)
-        CHECK_CUDA_CALL(cudaFree(this->m_fbPointer));
-    CHECK_CUDA_CALL(cudaMallocManaged(&this->m_fbPointer, width * height * sizeof(uint32_t)));
+    //this->m_outputBuff = ManagedDeviceBuffer{width * height * sizeof(uint32_t)};
+    this->m_outputBuff = std::make_unique<DeviceBuffer>(width * height * sizeof(uint32_t));
 
     // Resize buffers.
     this->m_queueCapacity            = width * height;
@@ -151,13 +150,13 @@ void WavefrontPathTracingIntegrator::mapFramebuffer()
     CHECK_CUDA_CALL(cudaGraphicsSubResourceGetMappedArray(&array, this->m_cuDisplayTexture, 0, 0));
     {
         CHECK_CUDA_CALL(cudaMemcpy2DToArray(array,
-                            0,
-                            0,
-                            reinterpret_cast<const void*>(this->m_fbPointer),
-                            this->m_width * sizeof(uint32_t),
-                            this->m_width * sizeof(uint32_t),
-                            this->m_height,
-                            cudaMemcpyDeviceToDevice));
+                                            0,
+                                            0,
+                                            this->m_outputBuff->getDevicePtr(),
+                                            this->m_width * sizeof(uint32_t),
+                                            this->m_width * sizeof(uint32_t),
+                                            this->m_height,
+                                            cudaMemcpyDeviceToDevice));
     }
 }
 
