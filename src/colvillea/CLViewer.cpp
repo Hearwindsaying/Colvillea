@@ -181,12 +181,11 @@ void CLViewer::resize(const vec2i& newSize)
 {
     glfwMakeContextCurrent(handle);
 
-    /*if (fbPointer)
-        cudaFree(fbPointer);
-    cudaMallocManaged(&fbPointer, newSize.x * newSize.y * sizeof(uint32_t));*/
-
+    // update fbSize.
     fbSize = newSize;
 
+    // Create GLTexture if it is not initialized before.
+    // Also need to unregister framebuffer before resizing GL texture.
     if (fbTexture == 0)
     {
         GL_CHECK(glGenTextures(1, &fbTexture));
@@ -196,39 +195,17 @@ void CLViewer::resize(const vec2i& newSize)
         this->m_pRenderEngine->unregisterFramebuffer();
     }
 
+    // After unregistration, we could safely resize GL texture.
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, this->fbTexture));
     GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newSize.x, newSize.y, 0, GL_RGBA,
                           GL_UNSIGNED_BYTE, nullptr));
 
+    // Finally register cuda with GLTexture.
     this->m_pRenderEngine->registerFramebuffer(this->fbTexture);
 
+    // Invoke resize.
     this->m_pRenderEngine->resize(newSize.x, newSize.y);
 
-    // We need to re-register when resizing the texture
-    //cudaError_t rc = cudaGraphicsGLRegisterImage(&cuDisplayTexture, fbTexture, GL_TEXTURE_2D, 0);
-
-    // if (firstResize || !firstResize && resourceSharingSuccessful) {
-    /* bool forceSlowDisplay = false;
-    if (rc != cudaSuccess || forceSlowDisplay)
-    {
-        std::cout << OWL_TERMINAL_RED
-                  << "Warning: Could not do CUDA graphics resource sharing "
-                  << "for the display buffer texture ("
-                  << cudaGetErrorString(cudaGetLastError())
-                  << ")... falling back to slower path"
-                  << OWL_TERMINAL_DEFAULT
-                  << std::endl;
-        resourceSharingSuccessful = false;
-        if (cuDisplayTexture)
-        {
-            cudaGraphicsUnregisterResource(cuDisplayTexture);
-            cuDisplayTexture = 0;
-        }
-    }
-    else
-    {
-        resourceSharingSuccessful = true;
-    }*/
     setAspect(fbSize.x / float(fbSize.y));
 
     this->cameraChanged();
@@ -258,33 +235,8 @@ void CLViewer::cameraChanged()
 void CLViewer::draw()
 {
     glfwMakeContextCurrent(handle);
-    //if (resourceSharingSuccessful)
-    {
-        this->m_pRenderEngine->mapFramebuffer();
-        /*GL_CHECK(cudaGraphicsMapResources(1, &cuDisplayTexture));
 
-        cudaArray_t array;
-        GL_CHECK(cudaGraphicsSubResourceGetMappedArray(&array, cuDisplayTexture, 0, 0));
-        {
-            cudaMemcpy2DToArray(array,
-                                0,
-                                0,
-                                reinterpret_cast<const void*>(fbPointer),
-                                fbSize.x * sizeof(uint32_t),
-                                fbSize.x * sizeof(uint32_t),
-                                fbSize.y,
-                                cudaMemcpyDeviceToDevice);
-        }*/
-    }
-    /*else
-    {
-        GL_CHECK(glBindTexture(GL_TEXTURE_2D, fbTexture));
-        glEnable(GL_TEXTURE_2D);
-        GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0,
-                                 0, 0,
-                                 fbSize.x, fbSize.y,
-                                 GL_RGBA, GL_UNSIGNED_BYTE, fbPointer));
-    }*/
+    this->m_pRenderEngine->mapFramebuffer();
 
     glDisable(GL_LIGHTING);
     glColor3f(1, 1, 1);
@@ -320,11 +272,8 @@ void CLViewer::draw()
         glVertex3f((float)fbSize.x, 0.f, 0.f);
     }
     glEnd();
-    //if (resourceSharingSuccessful)
-    {
-        this->m_pRenderEngine->unmapFramebuffer();
-        //GL_CHECK(cudaGraphicsUnmapResources(1, &cuDisplayTexture));
-    }
+    
+    this->m_pRenderEngine->unmapFramebuffer();
 }
 
 /*! re-computes the 'camera' from the 'cameracontrol', and notify
