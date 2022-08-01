@@ -37,8 +37,6 @@ public:
 
     virtual void mapFramebuffer() override;
 
-    virtual void unmapFramebuffer() override;
-
     virtual void updateCamera(const Camera& camera) override
     {
         this->m_camera = camera;
@@ -60,7 +58,8 @@ private:
     //ManagedDeviceBuffer m_outputBuff;
     std::unique_ptr<DeviceBuffer> m_outputBuff;
 
-    cudaGraphicsResource_t m_cuDisplayTexture{0};
+    // Consider bind to surface reference so that we could save the device copy operation.
+    GraphicsInteropTextureBuffer m_interopOutputTexBuff;
 
     uint32_t m_width{0}, m_height{0};
 

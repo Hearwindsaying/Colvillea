@@ -49,8 +49,6 @@ public:
 
     virtual void mapFramebuffer() = 0;
     
-    virtual void unmapFramebuffer() = 0;
-
     /// TODOs: delete this.
     virtual void updateCamera(const Camera& camera) = 0;
 

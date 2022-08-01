@@ -1,6 +1,11 @@
 #include "cudabuffer.h"
 
 #include <cuda_runtime.h>
+#include <cuda_gl_interop.h>
+#ifdef WIN32
+#    include <windows.h>
+#    include <gl/GL.h>
+#endif
 
 #include <spdlog/spdlog.h>
 
@@ -47,6 +52,60 @@ ManagedDeviceBuffer::ManagedDeviceBuffer(size_t bufferSizeInBytes)
 ManagedDeviceBuffer::~ManagedDeviceBuffer()
 {
     CHECK_CUDA_CALL(cudaFree(this->m_devicePtr));
+}
+
+void GraphicsInteropTextureBuffer::registerGLTexture(GLuint glTexture)
+{
+    this->m_glTexture = glTexture;
+
+    assert(this->m_cudaGraphicsTexture == nullptr);
+    CHECK_CUDA_CALL(cudaGraphicsGLRegisterImage(&this->m_cudaGraphicsTexture, glTexture, GL_TEXTURE_2D, 0));
+    assert(this->m_cudaGraphicsTexture != nullptr);
+}
+
+void GraphicsInteropTextureBuffer::unregisterGLTexture()
+{
+    if (this->m_cudaGraphicsTexture)
+    {
+        CHECK_CUDA_CALL(cudaGraphicsUnregisterResource(this->m_cudaGraphicsTexture));
+        this->m_cudaGraphicsTexture = nullptr;
+    }
+}
+
+void GraphicsInteropTextureBuffer::upload(const void* pSrcPtr, size_t spitch, size_t width, size_t height)
+{
+    GLTextureCUDAMapper interopMapper = this->mapGLTextureForCUDA();
+
+    CHECK_CUDA_CALL(cudaMemcpy2DToArray(interopMapper.getMappedCUDAArray(),
+                                        0,
+                                        0,
+                                        pSrcPtr,
+                                        spitch,
+                                        width,
+                                        height,
+                                        cudaMemcpyKind::cudaMemcpyDefault/*cudaMemcpyDeviceToDevice*/));
+}
+
+GLTextureCUDAMapper GraphicsInteropTextureBuffer::mapGLTextureForCUDA()
+{
+    return GLTextureCUDAMapper{this->m_cudaGraphicsTexture};
+}
+
+
+
+GLTextureCUDAMapper::GLTextureCUDAMapper(cudaGraphicsResource_t cudaGraphicsTex) :
+    m_cudaGraphicsTexture{cudaGraphicsTex}
+{
+    assert(this->m_cudaGraphicsTexture != nullptr);
+    CHECK_CUDA_CALL(cudaGraphicsMapResources(1, &this->m_cudaGraphicsTexture));
+
+    CHECK_CUDA_CALL(cudaGraphicsSubResourceGetMappedArray(&this->m_mappedCUDAArray, this->m_cudaGraphicsTexture, 0, 0));
+    assert(this->m_mappedCUDAArray != nullptr);
+}
+
+GLTextureCUDAMapper::~GLTextureCUDAMapper()
+{
+    CHECK_CUDA_CALL(cudaGraphicsUnmapResources(1, &this->m_cudaGraphicsTexture));
 }
 
 } // namespace core

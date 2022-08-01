@@ -39,8 +39,6 @@ public:
     /// Done with rendering.
     void endRendering() {}
 
-    void runInteractiveRendering();
-
     /// Resize rendering.
     void resize(uint32_t width, uint32_t height)
     {
@@ -50,11 +48,6 @@ public:
     void mapFramebuffer()
     {
         this->m_integrator->mapFramebuffer();
-    }
-
-    void unmapFramebuffer()
-    {
-        this->m_integrator->unmapFramebuffer();
     }
 
     void registerFramebuffer(unsigned int glTexture)

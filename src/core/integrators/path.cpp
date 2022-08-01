@@ -1,13 +1,5 @@
 #include "path.h"
 
-#ifdef WIN32
-#    include <windows.h>
-#    include <gl/GL.h>
-#endif
-
-// TODO: Remove this.
-#include <cuda_gl_interop.h>
-
 #include <librender/integrator.h>
 #include <libkernel/base/ray.h>
 
@@ -128,41 +120,22 @@ void WavefrontPathTracingIntegrator::resize(uint32_t width, uint32_t height)
 
 void WavefrontPathTracingIntegrator::unregisterFramebuffer()
 {
-    if (this->m_cuDisplayTexture)
-    {
-        CHECK_CUDA_CALL(cudaGraphicsUnregisterResource(this->m_cuDisplayTexture));
-        this->m_cuDisplayTexture = 0;
-    }
+    this->m_interopOutputTexBuff.unregisterGLTexture();
 }
 
 void WavefrontPathTracingIntegrator::registerFramebuffer(unsigned int glTexture)
 {
     // We need to re-register when resizing the texture
-    assert(this->m_cuDisplayTexture == 0);
-    CHECK_CUDA_CALL(cudaGraphicsGLRegisterImage(&this->m_cuDisplayTexture, glTexture, GL_TEXTURE_2D, 0));
+    this->m_interopOutputTexBuff.registerGLTexture(glTexture);
 }
 
 void WavefrontPathTracingIntegrator::mapFramebuffer()
 {
-    CHECK_CUDA_CALL(cudaGraphicsMapResources(1, &this->m_cuDisplayTexture));
-
-    cudaArray_t array;
-    CHECK_CUDA_CALL(cudaGraphicsSubResourceGetMappedArray(&array, this->m_cuDisplayTexture, 0, 0));
-    {
-        CHECK_CUDA_CALL(cudaMemcpy2DToArray(array,
-                                            0,
-                                            0,
-                                            this->m_outputBuff->getDevicePtr(),
-                                            this->m_width * sizeof(uint32_t),
-                                            this->m_width * sizeof(uint32_t),
-                                            this->m_height,
-                                            cudaMemcpyDeviceToDevice));
-    }
+    this->m_interopOutputTexBuff.upload(this->m_outputBuff->getDevicePtr(),
+                                        this->m_width * sizeof(uint32_t),
+                                        this->m_width * sizeof(uint32_t),
+                                        this->m_height);
 }
 
-void WavefrontPathTracingIntegrator::unmapFramebuffer()
-{
-    CHECK_CUDA_CALL(cudaGraphicsUnmapResources(1, &this->m_cuDisplayTexture));
-}
 } // namespace core
 } // namespace colvillea

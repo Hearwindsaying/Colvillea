@@ -3,6 +3,11 @@
 #include <cassert>
 #include <memory>
 
+#ifdef WIN32
+#    include <windows.h>
+#    include <gl/GL.h>
+#endif
+
 namespace colvillea
 {
 namespace core
@@ -192,6 +197,54 @@ public:
 private:
     /// Device pointer which could be safely passed to the kernel.
     void* m_devicePtr{nullptr};
+};
+
+class GLTextureCUDAMapper
+{
+public:
+    GLTextureCUDAMapper(cudaGraphicsResource_t cudaGraphicsTex);
+    ~GLTextureCUDAMapper();
+
+    cudaArray_t getMappedCUDAArray() const noexcept
+    {
+        return this->m_mappedCUDAArray;
+    }
+
+private:
+    cudaArray_t m_mappedCUDAArray{nullptr};
+
+    cudaGraphicsResource_t m_cudaGraphicsTexture{nullptr};
+};
+
+/**
+ * \brief
+ *    GraphicsInteropTextureBuffer helps cuda-opengl interops.
+ * 
+ * \remarks
+ *    Consider using PBO for interop.
+ */
+class GraphicsInteropTextureBuffer : public DeviceBufferBase
+{
+public:
+    GraphicsInteropTextureBuffer() = default;
+
+    void registerGLTexture(GLuint glTexture);
+    
+    void unregisterGLTexture();
+
+    void upload(const void* pSrcPtr, size_t spitch, size_t width, size_t height);
+
+private:
+    /// Once mapped, CUDA could access the data.
+    /// This is RAII and you do not need to unmap yourself.
+    GLTextureCUDAMapper mapGLTextureForCUDA();
+
+
+
+private:
+    cudaGraphicsResource_t m_cudaGraphicsTexture{nullptr};
+
+    GLuint m_glTexture{0};
 };
 
 } // namespace core
