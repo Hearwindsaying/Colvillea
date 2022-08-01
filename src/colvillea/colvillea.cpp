@@ -4,10 +4,14 @@
 #include <librender/device.h>
 #include <librender/integrator.h>
 #include <librender/renderengine.h>
+#include <librender/scene.h>
 
 #include <delegate/meshimporter.h>
 
+#include "CLViewer.h"
+
 using namespace colvillea;
+using namespace colvillea::app;
 
 int main(int argc, char* argv[])
 {
@@ -18,8 +22,8 @@ int main(int argc, char* argv[])
     auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
     auto cubeMesh  = delegate::MeshImporter::loadDefaultCube();
 
-    std::unique_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::InteractiveWavefrontPathTracing, 800, 600);
-    std::unique_ptr<core::Scene>        pScene        = core::Scene::createScene();
+    std::unique_ptr<core::Integrator> ptIntegrator = core::Integrator::createIntegrator(core::IntegratorType::WavefrontPathTracing, 800, 600);
+    std::unique_ptr<core::Scene>      pScene       = core::Scene::createScene();
 
     core::Scene* pSceneViewer = pScene.get();
 
@@ -34,7 +38,21 @@ int main(int argc, char* argv[])
     //pRenderEngine->startRendering();
     //pRenderEngine->endRendering();
 
-    pRenderEngine->runInteractiveRendering();
+    CLViewer clviewer{std::move(pRenderEngine), pSceneViewer};
+
+    const vec3f lookFrom(-4.f, -3.f, -2.f);
+    const vec3f lookAt(0.f, 0.f, 0.f);
+    const vec3f lookUp(0.f, 1.f, 0.f);
+    const float cosFovy = 0.66f;
+
+    clviewer.camera.setOrientation(lookFrom,
+                                   lookAt,
+                                   lookUp,
+                                   toDegrees(acosf(cosFovy)));
+    clviewer.enableFlyMode();
+    clviewer.enableInspectMode(owl::box3f(vec3f(-1.f), vec3f(+1.f)));
+
+    clviewer.showAndRun();
 
     return 0;
 }

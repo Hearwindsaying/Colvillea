@@ -3,12 +3,14 @@
 #include <memory>
 
 #include <librender/integrator.h>
-#include <librender/scene.h>
+#include <librender/nodebase/camera.h>
 
 namespace colvillea
 {
 namespace core
 {
+
+class Scene;
 
 /**
  * \brief
@@ -37,7 +39,26 @@ public:
     /// Done with rendering.
     void endRendering() {}
 
-    void runInteractiveRendering();
+    /// Resize rendering.
+    void resize(uint32_t width, uint32_t height)
+    {
+        this->m_integrator->resize(width, height);
+    }
+
+    void mapFramebuffer()
+    {
+        this->m_integrator->mapFramebuffer();
+    }
+
+    void registerFramebuffer(unsigned int glTexture)
+    {
+        this->m_integrator->registerFramebuffer(glTexture);
+    }
+
+    void unregisterFramebuffer()
+    {
+        this->m_integrator->unregisterFramebuffer();
+    }
 
 protected:
     void compileAccelStructs();
