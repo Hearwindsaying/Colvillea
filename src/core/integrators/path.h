@@ -32,6 +32,21 @@ public:
 
     virtual void render() override;
 
+    virtual void resize(uint32_t width, uint32_t height) override;
+
+    virtual void unregisterFramebuffer() override;
+
+    virtual void registerFramebuffer(unsigned int glTexture) override;
+
+    virtual void mapFramebuffer() override;
+
+    virtual void unmapFramebuffer() override;
+
+    virtual void updateCamera(const Camera& camera) override
+    {
+        this->m_camera = camera;
+    }
+
 protected:
     std::unique_ptr<OptiXDevice> m_optixDevice;
     std::unique_ptr<CUDADevice>  m_cudaDevice;
@@ -45,9 +60,14 @@ protected:
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>  m_rayEscapedWorkQueueBuff;
 
 private:
-    std::unique_ptr<PinnedHostDeviceBuffer> m_outputBuff;
+    ///std::unique_ptr<PinnedHostDeviceBuffer> m_outputBuff;
+    uint32_t* m_fbPointer{nullptr};
+    cudaGraphicsResource_t m_cuDisplayTexture{0};
 
     uint32_t m_width{0}, m_height{0};
+
+    // todo: delete this.
+    Camera m_camera;
 };
 
 /**
@@ -79,6 +99,8 @@ public:
     /*! this function gets called whenever any camera manipulator
     updates the camera. gets called AFTER all values have been updated */
     virtual void cameraChanged() override;
+
+    virtual void updateCamera(const Camera& camera) override {}
 
 private:
     vec3f m_camera_pos;

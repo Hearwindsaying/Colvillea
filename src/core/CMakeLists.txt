@@ -7,6 +7,7 @@ set(INTERFACE_LIBRENDER
     ${CORE_INCLUDE_DIR}/librender/scene.h
     ${CORE_INCLUDE_DIR}/librender/renderengine.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/shape.h
+    ${CORE_INCLUDE_DIR}/librender/nodebase/camera.h
 )
 
 set(INTERFACE_NODES_SHAPES

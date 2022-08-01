@@ -1,4 +1,5 @@
 #include <librender/renderengine.h>
+#include <librender/scene.h>
 
 // TODO: Delete this.
 #include "../integrators/path.h"
@@ -16,6 +17,9 @@ void RenderEngine::startRendering()
 {
     // Update scene and compile AccelStructs first.
     this->compileAccelStructs();
+
+    // Update camera.
+    this->m_integrator->updateCamera(this->m_scene->collectCamera());
 
     // Start rendering.
     this->m_integrator->render();

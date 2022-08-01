@@ -1,6 +1,28 @@
-add_executable(colvillea colvillea.cpp)
+set(OpenGL_GL_PREFERENCE "LEGACY")
+find_package(OpenGL REQUIRED)
+
+set(COLVILLEA_SOURCES
+  colvillea.cpp
+
+  CLViewer.h
+  Camera.h
+  InspectMode.h
+  FlyMode.h
+
+  CLViewer.cpp
+  Camera.cpp
+  InspectMode.cpp
+  FlyMode.cpp
+)
+
+add_executable(colvillea ${COLVILLEA_SOURCES})
 
 target_link_libraries(colvillea
+PRIVATE
+    owl::owl
+    glfw
+    OpenGL::GL
+
 PRIVATE
     colvillea-core
     colvillea-delegate

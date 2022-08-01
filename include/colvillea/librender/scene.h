@@ -4,6 +4,8 @@
 #include <vector>
 #include <optional>
 
+#include <librender/nodebase/camera.h>
+
 namespace colvillea
 {
 namespace core
@@ -88,6 +90,22 @@ private:
     std::vector<std::unique_ptr<TriangleMesh>> m_trimeshes;
 
     SceneEditAction m_editActions{};
+
+//tmps
+private:
+    Camera m_camera;
+
+public:
+    // Should we update scene edit actions?
+    void setCamera(const Camera& camera)
+    {
+        this->m_camera = camera;
+    }
+
+    const Camera& collectCamera() const noexcept
+    {
+        return this->m_camera;
+    }
 };
 }
 } // namespace colvillea
