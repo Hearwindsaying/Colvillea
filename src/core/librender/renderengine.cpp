@@ -1,8 +1,6 @@
 #include <librender/renderengine.h>
 #include <librender/scene.h>
-
-// TODO: Delete this.
-#include "../integrators/path.h"
+#include <librender/integrator.h>
 
 namespace colvillea
 {
@@ -23,32 +21,6 @@ void RenderEngine::startRendering()
 
     // Start rendering.
     this->m_integrator->render();
-}
-
-void RenderEngine::runInteractiveRendering()
-{
-    // Update scene and compile AccelStructs first.
-    this->compileAccelStructs();
-
-    // TODO: Delete this.
-    // Start rendering.
-    Integrator* pIntegrator = this->m_integrator.get();
-    InteractiveWavefrontIntegrator* pInteractiveIntegrator = dynamic_cast<InteractiveWavefrontIntegrator*>(pIntegrator);
-    assert(pInteractiveIntegrator);
-
-    const vec3f lookFrom(-4.f, -3.f, -2.f);
-    const vec3f lookAt(0.f, 0.f, 0.f);
-    const vec3f lookUp(0.f, 1.f, 0.f);
-    const float cosFovy = 0.66f;
-
-    pInteractiveIntegrator->camera.setOrientation(lookFrom,
-                                                  lookAt,
-                                                  lookUp,
-                                                  owl::viewer::toDegrees(acosf(cosFovy)));
-    pInteractiveIntegrator->enableFlyMode();
-    pInteractiveIntegrator->enableInspectMode(owl::box3f(vec3f(-1.f), vec3f(+1.f)));
-
-    pInteractiveIntegrator->showAndRun();
 }
 
 void RenderEngine::compileAccelStructs()

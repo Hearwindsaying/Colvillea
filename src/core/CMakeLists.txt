@@ -188,8 +188,6 @@ PRIVATE
 PUBLIC
     spdlog::spdlog
     owl::owl
-    #TODO: delete this.
-    owl_viewer
 )
 
 

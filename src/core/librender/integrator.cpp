@@ -12,8 +12,6 @@ std::unique_ptr<Integrator> Integrator::createIntegrator(IntegratorType type, ui
     {
         case IntegratorType::WavefrontPathTracing:
             return std::make_unique<WavefrontPathTracingIntegrator>(width, height);
-        case IntegratorType::InteractiveWavefrontPathTracing:
-            return std::make_unique<InteractiveWavefrontIntegrator>();
         default:
             assert(false);
             return {};

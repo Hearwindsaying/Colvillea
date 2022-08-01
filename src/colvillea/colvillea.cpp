@@ -38,8 +38,6 @@ int main(int argc, char* argv[])
     //pRenderEngine->startRendering();
     //pRenderEngine->endRendering();
 
-    //pRenderEngine->runInteractiveRendering();
-
     CLViewer clviewer{std::move(pRenderEngine), pSceneViewer};
 
     const vec3f lookFrom(-4.f, -3.f, -2.f);

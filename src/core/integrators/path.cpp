@@ -1,7 +1,15 @@
+#include "path.h"
+
+#ifdef WIN32
+#    include <windows.h>
+#    include <gl/GL.h>
+#endif
+
+// TODO: Remove this.
+#include <cuda_gl_interop.h>
+
 #include <librender/integrator.h>
 #include <libkernel/base/ray.h>
-
-#include "path.h"
 
 #include "../devices/cudadevice.h"
 #include "../devices/optixdevice.h"
@@ -157,69 +165,5 @@ void WavefrontPathTracingIntegrator::unmapFramebuffer()
 {
     CHECK_CUDA_CALL(cudaGraphicsUnmapResources(1, &this->m_cuDisplayTexture));
 }
-
-void InteractiveWavefrontIntegrator::render()
-{
-    // Prepare RayWork SOA.
-    int workItems = fbSize.x * fbSize.y;
-
-    kernel::SOAProxy<kernel::RayWork> rayworkSOA{const_cast<void*>(this->m_rayworkBuff->getDevicePtr()), static_cast<uint32_t>(workItems)};
-
-    // Generate primary camera rays.
-    this->m_cudaDevice->launchGenerateCameraRaysKernel(rayworkSOA, workItems, fbSize.x, fbSize.y, this->m_camera_pos, this->m_camera_d00, this->m_camera_ddu, this->m_camera_ddv);
-
-    // Bind RayWork buffer for tracing camera rays.
-    this->m_optixDevice->bindRayWorkBuffer(rayworkSOA,
-                                           this->m_evalShadingWorkQueueBuff.getDevicePtr(),
-                                           this->m_rayEscapedWorkQueueBuff.getDevicePtr());
-
-    // Tracing primary rays for intersection.
-    assert(rayworkSOA.arraySize == workItems);
-    this->m_optixDevice->launchTraceRayKernel(workItems);
-
-    // Handling missed rays.
-    this->m_cudaDevice->launchEvaluateEscapedRaysKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
-                                                        this->m_queueCapacity,
-                                                        fbPointer, fbSize.x, fbSize.y);
-
-    // Shading.
-    this->m_cudaDevice->launchEvaluateShadingKernel(this->m_evalShadingWorkQueueBuff.getDevicePtr(),
-                                                    this->m_queueCapacity,
-                                                    fbPointer);
-
-    // Reset Queues.
-    this->m_cudaDevice->launchResetQueuesKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
-                                                this->m_evalShadingWorkQueueBuff.getDevicePtr());
-}
-
-void InteractiveWavefrontIntegrator::resize(const owl::vec2i& newSize)
-{
-    OWLViewer::resize(newSize);
-
-    // Resize buffers.
-    this->m_queueCapacity            = newSize.x * newSize.y;
-    this->m_rayworkBuff              = std::make_unique<DeviceBuffer>(this->m_queueCapacity * kernel::SOAProxy<kernel::RayWork>::StructureSize);
-    this->m_evalShadingWorkQueueBuff = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadingWork>>(this->m_queueCapacity);
-    this->m_rayEscapedWorkQueueBuff  = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>(this->m_queueCapacity);
-
-    this->cameraChanged();
-}
-
-void InteractiveWavefrontIntegrator::cameraChanged()
-{
-    const vec3f lookFrom = camera.getFrom();
-    const vec3f lookAt   = camera.getAt();
-    const vec3f lookUp   = camera.getUp();
-    const float cosFovy  = camera.getCosFovy();
-    // ----------- compute variable values  ------------------
-    this->m_camera_pos = lookFrom;
-    this->m_camera_d00 = normalize(lookAt - lookFrom);
-    float aspect     = fbSize.x / float(fbSize.y);
-    this->m_camera_ddu   = cosFovy * aspect * normalize(cross(this->m_camera_d00, lookUp));
-    this->m_camera_ddv = cosFovy * normalize(cross(this->m_camera_ddu, this->m_camera_d00));
-    this->m_camera_d00 -= 0.5f * this->m_camera_ddu;
-    this->m_camera_d00 -= 0.5f * this->m_camera_ddv;
-}
-
 } // namespace core
 } // namespace colvillea

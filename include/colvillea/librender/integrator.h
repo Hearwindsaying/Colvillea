@@ -21,9 +21,7 @@ enum class IntegratorType : uint32_t
     None = 0,
 
     /// Wavefront path tracing integrator using OptiX and CUDA devices.
-    WavefrontPathTracing,
-
-    InteractiveWavefrontPathTracing
+    WavefrontPathTracing
 };
 
 class Integrator
