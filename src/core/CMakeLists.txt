@@ -5,13 +5,19 @@ set(INTERFACE_LIBRENDER
     ${CORE_INCLUDE_DIR}/librender/device.h
     ${CORE_INCLUDE_DIR}/librender/integrator.h
     ${CORE_INCLUDE_DIR}/librender/scene.h
+    ${CORE_INCLUDE_DIR}/librender/entity.h
     ${CORE_INCLUDE_DIR}/librender/renderengine.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/shape.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/camera.h
+    ${CORE_INCLUDE_DIR}/librender/nodebase/material.h
 )
 
 set(INTERFACE_NODES_SHAPES
     ${CORE_INCLUDE_DIR}/nodes/shapes/trianglemesh.h
+)
+
+set(INTERFACE_NODES_MATERIALS
+    ${CORE_INCLUDE_DIR}/nodes/materials/diffusemtl.h
 )
 
 set(INCLUDE_DEVICES
@@ -43,20 +49,27 @@ set(SOURCE_LIBRENDER
     librender/device.cpp
     librender/integrator.cpp
     librender/scene.cpp
+    librender/entity.cpp
     librender/renderengine.cpp
     librender/nodebase/shape.cpp
+    librender/nodebase/material.cpp
 )
 
-set(SOURCE_NODES
+set(SOURCE_NODES_SHAPES
 # Shapes
     nodes/shapes/trianglemesh.cpp
+)
+
+set(SOURCE_NODES_MATERIALS
+    nodes/materials/diffusemtl.cpp
 )
 
 set_source_files_properties(
     ${SOURCE_DEVICES}
     ${SOURCE_INTEGRATORS}
     ${SOURCE_LIBRENDER}
-    ${SOURCE_NODES}
+    ${SOURCE_NODES_SHAPES}
+    ${SOURCE_NODES_MATERIALS}
 
     PROPERTIES LANGUAGE CUDA
 )
@@ -166,12 +179,14 @@ add_library(colvillea-core
 STATIC 
     ${INTERFACE_LIBRENDER} 
     ${INTERFACE_NODES_SHAPES}
+    ${INTERFACE_NODES_MATERIALS}
     ${INCLUDE_DEVICES}
     ${SOURCE_DEVICES}
     ${INCLUDE_INTEGRATORS}
     ${SOURCE_INTEGRATORS}
     ${SOURCE_LIBRENDER}
-    ${SOURCE_NODES}
+    ${SOURCE_NODES_SHAPES}
+    ${SOURCE_NODES_MATERIALS}
 )
 
 target_include_directories(colvillea-core
@@ -196,12 +211,14 @@ source_group("include/integrators" FILES ${INCLUDE_INTEGRATORS})
 
 source_group("interface/librender" FILES ${INTERFACE_LIBRENDER})
 source_group("interface/nodes/shapes" FILES ${INTERFACE_NODES_SHAPES})
+source_group("interface/nodes/materials" FILES ${INTERFACE_NODES_MATERIALS})
 
 source_group("src/devices" FILES ${SOURCE_DEVICES})
 source_group("src/integrators" FILES ${SOURCE_INTEGRATORS})
 
 source_group("src/librender" FILES ${SOURCE_LIBRENDER})
-source_group("src/nodes/shapes" FILES ${SOURCE_NODES})
+source_group("src/nodes/shapes" FILES ${SOURCE_NODES_SHAPES})
+source_group("src/nodes/materials" FILES ${SOURCE_NODES_MATERIALS})
 
 set_target_properties(colvillea-core PROPERTIES
     FOLDER colvillea

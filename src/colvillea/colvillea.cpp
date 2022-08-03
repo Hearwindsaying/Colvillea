@@ -5,6 +5,8 @@
 #include <librender/integrator.h>
 #include <librender/renderengine.h>
 #include <librender/scene.h>
+#include <librender/entity.h>
+#include <librender/nodebase/material.h>
 
 #include <delegate/meshimporter.h>
 
@@ -13,23 +15,35 @@
 using namespace colvillea;
 using namespace colvillea::app;
 
+
+
 int main(int argc, char* argv[])
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
     auto dir = std::filesystem::weakly_canonical(std::filesystem::path(argv[0])).parent_path();
 
-    auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
-    auto cubeMesh  = delegate::MeshImporter::loadDefaultCube();
+    /*auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
+    auto cubeMesh  = delegate::MeshImporter::loadDefaultCube();*/
 
-    std::unique_ptr<core::Integrator> ptIntegrator = core::Integrator::createIntegrator(core::IntegratorType::WavefrontPathTracing, 800, 600);
-    std::unique_ptr<core::Scene>      pScene       = core::Scene::createScene();
+    std::shared_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::WavefrontPathTracing, 800, 600);
+    std::shared_ptr<core::Scene>        pScene        = core::Scene::createScene();
+    core::Scene*                        pSceneViewer  = pScene.get();
+    std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(ptIntegrator, pScene);
+    
+    
+    /*pScene->addTriangleMeshes(std::move(objMeshes));
+    pScene->addTriangleMesh(std::move(cubeMesh));*/
 
-    core::Scene* pSceneViewer = pScene.get();
 
-    pScene->addTriangleMeshes(std::move(objMeshes));
-    pScene->addTriangleMesh(std::move(cubeMesh));
-    std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(std::move(ptIntegrator), std::move(pScene));
+    std::shared_ptr<core::TriangleMesh> cubeMesh = delegate::MeshImporter::loadDefaultCube();
+    std::shared_ptr<core::Material>
+        pMaterial = core::Material::createMaterial(core::MaterialType::Diffuse, vec3f{1.0f});
+
+    std::shared_ptr<core::Entity> pEntity = std::make_shared<core::Entity>(pMaterial, cubeMesh);
+    pSceneViewer->addEntity(pEntity);
+
+
 
     /*pRenderEngine->startRendering();
     pRenderEngine->endRendering();*/

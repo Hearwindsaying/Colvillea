@@ -21,7 +21,9 @@
 #include <libkernel/base/owldefs.h>
 #include <libkernel/base/ray.h>
 
-
+/// <summary>
+/// TODO: DELETE THIS.
+/// </summary>
 namespace colvillea
 {
 namespace kernel
@@ -36,8 +38,7 @@ struct TrianglesGeomData
     vec3f* vertex;
 };
 
-/* variables for the ray generation program */
-struct RayGenData
+struct LaunchParams
 {
     OptixTraversableHandle world;
 
@@ -51,5 +52,6 @@ struct RayGenData
     SOAProxyQueue<EvalShadingWork>* evalShadingWorkQueue;
     SOAProxyQueue<RayEscapedWork>*  rayEscapedWorkQueue;
 };
+
 } // namespace kernel
 } // namespace colvillea

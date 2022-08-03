@@ -27,11 +27,12 @@ class Scene;
 class RenderEngine
 {
 public:
-    static std::unique_ptr<RenderEngine> createRenderEngine(std::unique_ptr<Integrator> integrator, std::unique_ptr<Scene> scene);
+    static std::unique_ptr<RenderEngine> createRenderEngine(std::shared_ptr<Integrator> integrator,
+                                                            std::shared_ptr<Scene>      scene);
 
 public:
-    RenderEngine(std::unique_ptr<Integrator> integrator, std::unique_ptr<Scene> scene) :
-        m_integrator{std::move(integrator)}, m_scene{std::move(scene)} {}
+    RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene) :
+        m_integrator{integrator}, m_scene{scene} {}
 
     /// Start rendering.
     void startRendering();
@@ -65,8 +66,8 @@ protected:
 
 
 protected:
-    std::unique_ptr<Integrator> m_integrator;
-    std::unique_ptr<Scene>      m_scene;
+    std::shared_ptr<Integrator> m_integrator;
+    std::shared_ptr<Scene>      m_scene;
 };
 } // namespace core
 } // namespace colvillea

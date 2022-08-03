@@ -4,6 +4,8 @@
 #include <limits>
 #include <cassert>
 
+#include <libkernel/base/soa.h>
+
 #ifdef __INTELLISENSE__
 #    define __CUDACC__
 #endif
@@ -18,9 +20,6 @@ namespace colvillea
 {
 namespace kernel
 {
-template <typename T>
-struct SOAProxy;
-
 struct Ray
 {
     __device__ __host__ Ray() = default;

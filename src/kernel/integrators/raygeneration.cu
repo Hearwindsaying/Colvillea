@@ -9,6 +9,7 @@
 
 #include <libkernel/base/owldefs.h>
 #include <libkernel/base/ray.h>
+#include <libkernel/base/material.h>
 #include <libkernel/integrators/raygeneration.cuh>
 
 namespace colvillea
@@ -36,6 +37,7 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
     vec2ui    pixelPosi{jobId % width, jobId / width};
     const int pixelIndex = jobId;
 
+    // A simple perspective camera.
     const vec2f screen = (vec2f{pixelPosi} + vec2f{.5f, .5f}) / vec2f(width, height);
 
     Ray ray;
@@ -72,6 +74,12 @@ __global__ void evaluateShading(SOAProxyQueue<EvalShadingWork>* evalShadingWorkQ
     outputBuffer[evalShadingWork.pixelIndex] =
         owl::make_rgba(
             .2f + .8f * fabs(dot(vec3f(evalShadingWork.rayDirection), vec3f(evalShadingWork.ng))) * vec3f(0.0, 0.0, 0.5));
+}
+
+__global__ void evaluateMaterials(SOAProxyQueue<EvalShadingWork>* evalMaterialsWorkQueue,
+                                  const Material*                 materials)
+{
+
 }
 
 __global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*  escapedRayQueue,

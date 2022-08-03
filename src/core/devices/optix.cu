@@ -27,47 +27,38 @@ namespace colvillea
 {
 namespace kernel
 {
-struct ClosestHitPayload
-{
-    vec3f    hitNormal;
-    vec3f    rayDirection;
-    uint32_t missed{0};
-};
+extern "C" __constant__ LaunchParams optixLaunchParams;
 
 OPTIX_RAYGEN_PROGRAM(raygen)
 ()
 {
-    const RayGenData& raygenData = owl::getProgramData<RayGenData>();
-
     int jobId = optixGetLaunchIndex().x;
 
     // Fetching ray from ray buffer.
     owl::Ray ray;
-    ray.origin    = raygenData.o[jobId];
-    ray.tmin      = raygenData.mint[jobId];
-    ray.direction = raygenData.d[jobId];
-    ray.tmax      = raygenData.maxt[jobId];
+    ray.origin    = optixLaunchParams.o[jobId];
+    ray.tmin      = optixLaunchParams.mint[jobId];
+    ray.direction = optixLaunchParams.d[jobId];
+    ray.tmax      = optixLaunchParams.maxt[jobId];
 
     // Trace rays.
-    ClosestHitPayload payload{};
-    owl::traceRay(/*accel to trace against*/ raygenData.world,
-                  /*the ray to trace*/ ray,
-                  /*prd*/ payload);
-
-    if (payload.missed == 1)
-    {
-        raygenData.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{jobId});
-    }
-    else
-    {
-        raygenData.evalShadingWorkQueue->pushWorkItem(EvalShadingWork{payload.hitNormal, payload.rayDirection, jobId});
-    }
+    optixTrace(optixLaunchParams.world,
+               (const float3&)ray.origin,
+               (const float3&)ray.direction,
+               ray.tmin,
+               ray.tmax,
+               ray.time,
+               ray.visibilityMask,
+               /*rayFlags     */ 0u,
+               /*SBToffset    */ ray.rayType,
+               /*SBTstride    */ ray.numRayTypes,
+               /*missSBTIndex */ ray.rayType);
 }
 
 OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 ()
 {
-    ClosestHitPayload& payload = owl::getPRD<ClosestHitPayload>();
+    int jobId   = optixGetLaunchIndex().x;
 
     const TrianglesGeomData& self = owl::getProgramData<TrianglesGeomData>();
 
@@ -79,15 +70,14 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
     const vec3f& C      = self.vertex[index.z];
     const vec3f  Ng     = normalize(cross(B - A, C - A));
 
-    payload.hitNormal    = Ng;
-    payload.rayDirection = optixGetWorldRayDirection();
+    optixLaunchParams.evalShadingWorkQueue->pushWorkItem(EvalShadingWork{Ng, optixGetWorldRayDirection(), jobId});
 }
 
 OPTIX_MISS_PROGRAM(miss)
 ()
 {
-    ClosestHitPayload& payload = owl::getPRD<ClosestHitPayload>();
-    payload.missed             = 1;
+    int jobId = optixGetLaunchIndex().x;
+    optixLaunchParams.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{jobId});
 }
 } // namespace kernel
 } // namespace colvillea

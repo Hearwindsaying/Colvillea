@@ -6,7 +6,8 @@ namespace colvillea
 {
 namespace core
 {
-std::unique_ptr<RenderEngine> RenderEngine::createRenderEngine(std::unique_ptr<Integrator> integrator, std::unique_ptr<Scene> scene)
+std::unique_ptr<RenderEngine> RenderEngine::createRenderEngine(std::shared_ptr<Integrator> integrator,
+                                                               std::shared_ptr<Scene>      scene)
 {
     return std::make_unique<RenderEngine>(std::move(integrator), std::move(scene));
 }
@@ -39,11 +40,12 @@ void RenderEngine::compileAccelStructs()
 
     // 2. We may also remove some meshes or changing transformations so we need to check
     // rebuilding TLAS.
-    auto TLASBuildDataSource = this->m_scene->collectTriangleMeshForTLASBuilding();
-    if (TLASBuildDataSource)
+    auto TLASBuildDataSourceAndInstanceIDs = this->m_scene->collectTriangleMeshForTLASBuilding();
+    if (TLASBuildDataSourceAndInstanceIDs)
     {
         sceneHasChanged = true;
-        this->m_integrator->buildTLAS(*TLASBuildDataSource);
+        this->m_integrator->buildTLAS((*TLASBuildDataSourceAndInstanceIDs).first, 
+                                      (*TLASBuildDataSourceAndInstanceIDs).second);
     }
 
     // Once we have done with updating scene to integrator, we should reset scene edit

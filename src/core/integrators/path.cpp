@@ -44,9 +44,10 @@ void WavefrontPathTracingIntegrator::buildBLAS(const std::vector<TriangleMesh*>&
     this->m_optixDevice->buildOptiXAccelBLASes(trimeshes);
 }
 
-void WavefrontPathTracingIntegrator::buildTLAS(const std::vector<const TriangleMesh*>& trimeshes)
+void WavefrontPathTracingIntegrator::buildTLAS(const std::vector<const TriangleMesh*>& trimeshes,
+                                               const std::vector<uint32_t>&      instanceIDs)
 {
-    this->m_optixDevice->buildOptiXAccelTLAS(trimeshes);
+    this->m_optixDevice->buildOptiXAccelTLAS(trimeshes, instanceIDs);
 }
 
 void WavefrontPathTracingIntegrator::render()

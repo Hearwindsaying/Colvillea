@@ -37,7 +37,8 @@ public:
     void buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimeshes);
 
     /// Create and build a TLASDataSet out of trimeshes.
-    void buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes);
+    void buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes,
+                             const std::vector</*const */uint32_t>&  instanceIDs);
 
     void bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>& rayworkBufferSOA,
                            const kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueueDevicePtr,
@@ -95,6 +96,9 @@ private:
     /// Ray generation and miss programs.
     OWLRayGen   m_raygen{nullptr};
     OWLMissProg m_miss{nullptr};
+
+    /// LaunchParams.
+    OWLParams m_launchParams{nullptr};
 
     /// Accelerator data set.
     std::unique_ptr<TLASDataSet> m_worldTLAS;

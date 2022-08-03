@@ -26,6 +26,12 @@ void Scene::addTriangleMeshes(std::vector<std::unique_ptr<TriangleMesh>>&& trime
     this->m_editActions.addAction(SceneEditAction::EditActionType::ShapeAdded);
 }
 
+void Scene::addMaterial(std::shared_ptr<Material> material)
+{
+    this->m_materials.push_back(material);
+    this->m_editActions.addAction(SceneEditAction::EditActionType::MaterialAdded);
+}
+
 std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuilding() const
 {
     // If we added a new shape to the scene, it would have an empty BLAS to be built.
@@ -34,11 +40,14 @@ std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuild
         this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeAdded))
     {
         std::vector<TriangleMesh*> trimeshes;
-        for (const auto& mesh : this->m_trimeshes)
+
+        // Collect trimesh from entities.
+        for (const auto& entity : this->m_entities)
         {
-            if (mesh->getTriMeshBLAS()->needRebuildBLAS())
+            TriangleMesh* trimesh = entity->getTrimesh();
+            if (trimesh->getTriMeshBLAS()->needRebuildBLAS())
             {
-                trimeshes.push_back(mesh.get());
+                trimeshes.push_back(trimesh);
             }
         }
 
@@ -48,18 +57,30 @@ std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuild
     return {};
 }
 
-std::optional<std::vector<const TriangleMesh*>> Scene::collectTriangleMeshForTLASBuilding() const
+std::optional<std::pair<std::vector<const TriangleMesh*>,
+                        std::vector<uint32_t>>>
+Scene::collectTriangleMeshForTLASBuilding() const
 {
     if (this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeAdded) ||
         this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeRemoved))
     {
         std::vector<const TriangleMesh*> dirtyMeshes;
-        for (const auto& pTriMesh : this->m_trimeshes)
+        std::vector<uint32_t>            instanceIDs;
+
+        dirtyMeshes.reserve(this->m_entities.size());
+        instanceIDs.reserve(this->m_entities.size());
+
+        // Collect trimesh from entities.
+        // Our instanceID for kernel::SOAProxy<kernel::Entity> follows the order
+        // in this->m_entities.
+        uint32_t instanceID = 0;
+        for (const auto& entity : this->m_entities)
         {
-            dirtyMeshes.push_back(pTriMesh.get());
+            dirtyMeshes.push_back(entity->getTrimesh());
+            instanceIDs.push_back(instanceID++);
         }
 
-        return std::make_optional(std::move(dirtyMeshes));
+        return std::make_optional(std::make_pair(std::move(dirtyMeshes), std::move(instanceIDs)));
     }
     
     return {};

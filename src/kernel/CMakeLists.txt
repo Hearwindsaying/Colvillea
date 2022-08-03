@@ -3,11 +3,34 @@ set(KERNEL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 set(INTERFACE_BASE
     ${KERNEL_INCLUDE_DIR}/libkernel/base/ray.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/owldefs.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/bsdf.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/frame.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/math.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/warp.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/texture.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/material.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/entity.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/soa.h
+)
+
+set(INTERFACE_BSDFS
+    ${KERNEL_INCLUDE_DIR}/libkernel/bsdfs/smoothdiffuse.h
+)
+
+set(INTERFACE_SHAPES
+    ${KERNEL_INCLUDE_DIR}/libkernel/shapes/trimesh.h
 )
 
 set(INTERFACE_INTEGRATORS
     ${KERNEL_INCLUDE_DIR}/libkernel/integrators/raygeneration.cuh
 )
+
+set(INTERFACE_MATERIALS
+    ${KERNEL_INCLUDE_DIR}/libkernel/materials/diffusemtl.h
+)
+
+
+
 
 set_source_files_properties(
     ${INTERFACE_INTEGRATORS}
@@ -15,15 +38,33 @@ set_source_files_properties(
     PROPERTIES HEADER_FILE_ONLY TRUE
 )
 
+set(SOURCE_BASE
+    base/bsdf.cpp
+)
+
 set(SOURCE_INTEGRATORS
     integrators/raygeneration.cu
+)
+
+set(SOURCE_BSDFS
+    bsdfs/smoothdiffuse.cpp
+)
+
+set(SOURCE_MATERIALS
+    materials/diffusemtl.cpp
 )
 
 add_library(colvillea-kernel 
 STATIC 
     ${INTERFACE_BASE} 
     ${INTERFACE_INTEGRATORS}
+    ${INTERFACE_BSDFS}
+    ${INTERFACE_SHAPES}
+    ${INTERFACE_MATERIALS}
     ${SOURCE_INTEGRATORS}
+    ${SOURCE_BASE}
+    ${SOURCE_BSDFS}
+    ${SOURCE_MATERIALS}
 )
 
 set_target_properties(colvillea-kernel PROPERTIES LINKER_LANGUAGE CXX)
@@ -44,7 +85,13 @@ PUBLIC
 
 source_group("interface/base" FILES ${INTERFACE_BASE})
 source_group("interface/integrators" FILES ${INTERFACE_INTEGRATORS})
+source_group("interface/bsdfs" FILES ${INTERFACE_BSDFS})
+source_group("interface/shapes" FILES ${INTERFACE_SHAPES})
+source_group("interface/materials" FILES ${INTERFACE_MATERIALS})
 source_group("source/integrators" FILES ${SOURCE_INTEGRATORS})
+source_group("source/base" FILES ${SOURCE_BASE})
+source_group("source/bsdfs" FILES ${SOURCE_BSDFS})
+source_group("source/materials" FILES ${SOURCE_MATERIALS})
 
 set_target_properties(colvillea-kernel PROPERTIES
     FOLDER colvillea

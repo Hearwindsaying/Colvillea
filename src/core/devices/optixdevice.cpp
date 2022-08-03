@@ -60,26 +60,27 @@ OptiXDevice::OptiXDevice() :
     // -------------------------------------------------------
     // set up ray gen program
     // -------------------------------------------------------
-    OWLVarDecl rayGenVars[] = {
-        {"world", OWL_GROUP, OWL_OFFSETOF(kernel::RayGenData, world)},
+    OWLVarDecl launchParamsVars[] = {
+        {"world", OWL_GROUP, OWL_OFFSETOF(kernel::LaunchParams, world)},
 
         // RayBuffer.
-        {"o", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, o)},
-        {"mint", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, mint)},
-        {"d", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, d)},
-        {"maxt", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, maxt)},
-        {"pixelIndex", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, pixelIndex)},
+        {"o", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, o)},
+        {"mint", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, mint)},
+        {"d", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, d)},
+        {"maxt", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, maxt)},
+        {"pixelIndex", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, pixelIndex)},
 
-        {"evalShadingWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, evalShadingWorkQueue)},
-        {"rayEscapedWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::RayGenData, rayEscapedWorkQueue)},
+        {"evalShadingWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, evalShadingWorkQueue)},
+        {"rayEscapedWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, rayEscapedWorkQueue)},
 
         {/* sentinel to mark end of list */}};
 
+    this->m_launchParams = owlParamsCreate(this->m_owlContext, sizeof(kernel::LaunchParams),
+                                           launchParamsVars, -1);
+
     // ----------- create object  ----------------------------
     this->m_raygen = owlRayGenCreate(this->m_owlContext, this->m_owlModule, "raygen",
-                                     sizeof(kernel::RayGenData),
-                                     rayGenVars, -1);
-
+                                     0, nullptr, 0);
 
     // Programs and pipelines only need to be bound once.
     // SBT should be built on demand.
@@ -139,9 +140,12 @@ void OptiXDevice::buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimes
     }
 }
 
-void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes)
+void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes,
+                                      const std::vector</*const */ uint32_t>& instanceIDs)
 {
-    std::vector<OWLGroup> groupTLAS;
+    assert(trimeshes.size() == instanceIDs.size());
+
+    std::vector</*const */ OWLGroup> groupTLAS;
     groupTLAS.reserve(trimeshes.size());
 
     for (const auto& trimesh : trimeshes)
@@ -155,7 +159,10 @@ void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& tr
 
     // We have a RAII TLASDataSet type.
     {
-        OWLGroup worldTLAS = owlInstanceGroupCreate(this->m_owlContext, groupTLAS.size(), groupTLAS.data());
+        OWLGroup worldTLAS = owlInstanceGroupCreate(this->m_owlContext,
+                                                    groupTLAS.size(),
+                                                    groupTLAS.data(),
+                                                    instanceIDs.data());
         this->m_worldTLAS  = std::make_unique<TLASDataSet>(worldTLAS);
     }
     assert(this->m_worldTLAS->m_worldTLAS != nullptr);
@@ -164,7 +171,7 @@ void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& tr
     owlGroupBuildAccel(this->m_worldTLAS->m_worldTLAS);
 
     // Bind world TLAS.
-    owlRayGenSetGroup(this->m_raygen, "world", this->m_worldTLAS->m_worldTLAS);
+    owlParamsSetGroup(this->m_launchParams, "world", this->m_worldTLAS->m_worldTLAS);
 
     // ##################################################################
     // build *SBT* required to trace the groups
@@ -176,15 +183,15 @@ void OptiXDevice::bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&    
                                     const kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueueDevicePtr,
                                     const kernel::SOAProxyQueue<kernel::RayEscapedWork>*  rayEscapedQueueDevicePtr)
 {
-    owlRayGenSet1ul(this->m_raygen, "o", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.o));
-    owlRayGenSet1ul(this->m_raygen, "mint", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.mint));
-    owlRayGenSet1ul(this->m_raygen, "d", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.d));
-    owlRayGenSet1ul(this->m_raygen, "maxt", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.maxt));
-    owlRayGenSet1ul(this->m_raygen, "pixelIndex", reinterpret_cast<uint64_t>(rayworkBufferSOA.pixelIndex));
+    owlParamsSet1ul(this->m_launchParams, "o", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.o));
+    owlParamsSet1ul(this->m_launchParams, "mint", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.mint));
+    owlParamsSet1ul(this->m_launchParams, "d", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.d));
+    owlParamsSet1ul(this->m_launchParams, "maxt", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.maxt));
+    owlParamsSet1ul(this->m_launchParams, "pixelIndex", reinterpret_cast<uint64_t>(rayworkBufferSOA.pixelIndex));
 
     assert(evalShadingWorkQueueDevicePtr != nullptr && rayEscapedQueueDevicePtr != nullptr);
-    owlRayGenSet1ul(this->m_raygen, "evalShadingWorkQueue", reinterpret_cast<uint64_t>(evalShadingWorkQueueDevicePtr));
-    owlRayGenSet1ul(this->m_raygen, "rayEscapedWorkQueue", reinterpret_cast<uint64_t>(rayEscapedQueueDevicePtr));
+    owlParamsSet1ul(this->m_launchParams, "evalShadingWorkQueue", reinterpret_cast<uint64_t>(evalShadingWorkQueueDevicePtr));
+    owlParamsSet1ul(this->m_launchParams, "rayEscapedWorkQueue", reinterpret_cast<uint64_t>(rayEscapedQueueDevicePtr));
 
     owlBuildSBT(this->m_owlContext);
 }
@@ -198,9 +205,7 @@ void OptiXDevice::launchTraceRayKernel(size_t nItems)
 
     spdlog::info("launching ...");
     // OWL does not support 1D launching...
-    owlRayGenLaunch2D(this->m_raygen, nItems, 1);
-
-    CHECK_CUDA_CALL(cudaDeviceSynchronize());
+    owlLaunch2D(this->m_raygen, nItems, 1, this->m_launchParams);
 }
 } // namespace core
 } // namespace colvillea
