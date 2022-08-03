@@ -15,11 +15,11 @@ namespace kernel
 {
 struct TriMesh
 {
-    /// Indices array.
+    /// Indices array of the trimesh.
     vec3i* indices;
 
-    /// Vertices array.
-    vec3f* verts;
+    /// Vertices array of the trimesh.
+    vec3f* vertices;
 };
 } // namespace kernel
 } // namespace colvillea

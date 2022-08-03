@@ -10,6 +10,7 @@ extern "C" char optix_ptx[];
 
 // our device-side data structures
 #include "deviceCode.h"
+#include <libkernel/shapes/trimesh.h>
 
 #include "cudacommon.h"
 
@@ -30,11 +31,11 @@ OptiXDevice::OptiXDevice() :
     // declare geometry type
     // -------------------------------------------------------
     OWLVarDecl trianglesGeomVars[] = {
-        {"index", OWL_BUFPTR, OWL_OFFSETOF(kernel::TrianglesGeomData, index)},
-        {"vertex", OWL_BUFPTR, OWL_OFFSETOF(kernel::TrianglesGeomData, vertex)}};
+        {"index", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, indices)},
+        {"vertex", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, vertices)}};
     this->m_owlTriMeshGeomType = owlGeomTypeCreate(this->m_owlContext,
                                                    OWL_TRIANGLES,
-                                                   sizeof(kernel::TrianglesGeomData),
+                                                   sizeof(kernel::TriMesh),
                                                    trianglesGeomVars, 2);
     owlGeomTypeSetClosestHit(this->m_owlTriMeshGeomType, /* GeomType */
                              0,                          /* Ray type*/

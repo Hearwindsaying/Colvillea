@@ -29,15 +29,6 @@ namespace colvillea
 namespace kernel
 {
 
-/* variables for the triangle mesh geometry */
-struct TrianglesGeomData
-{
-    /*! array/buffer of vertex indices */
-    vec3i* index;
-    /*! array/buffer of vertex positions */
-    vec3f* vertex;
-};
-
 struct LaunchParams
 {
     OptixTraversableHandle world;

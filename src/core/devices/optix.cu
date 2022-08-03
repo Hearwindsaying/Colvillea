@@ -23,6 +23,8 @@
 
 #include <owl/owl_device.h>
 
+#include <libkernel/shapes/trimesh.h>
+
 namespace colvillea
 {
 namespace kernel
@@ -60,14 +62,14 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 {
     int jobId   = optixGetLaunchIndex().x;
 
-    const TrianglesGeomData& self = owl::getProgramData<TrianglesGeomData>();
+    const TriMesh& trimesh = owl::getProgramData<TriMesh>();
 
     // compute normal:
     const int    primID = optixGetPrimitiveIndex();
-    const vec3i  index  = self.index[primID];
-    const vec3f& A      = self.vertex[index.x];
-    const vec3f& B      = self.vertex[index.y];
-    const vec3f& C      = self.vertex[index.z];
+    const vec3i  index  = trimesh.indices[primID];
+    const vec3f& A      = trimesh.vertices[index.x];
+    const vec3f& B      = trimesh.vertices[index.y];
+    const vec3f& C      = trimesh.vertices[index.z];
     const vec3f  Ng     = normalize(cross(B - A, C - A));
 
     optixLaunchParams.evalShadingWorkQueue->pushWorkItem(EvalShadingWork{Ng, optixGetWorldRayDirection(), jobId});
