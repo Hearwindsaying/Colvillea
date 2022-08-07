@@ -23,8 +23,11 @@ namespace kernel
  */
 struct Entity
 {
-    TriMesh*  trimesh;
-    Material* material;
+    /// TODO: trimesh seems to be useless since we could
+    /// already access trimesh data by BLAS/TLAS itself.
+    //TriMesh*  trimesh;
+    //Material* material;
+    uint32_t    materialIndex;
 };
 } // namespace kernel
 } // namespace colvillea

@@ -5,6 +5,9 @@
 #include <nodes/shapes/trianglemesh.h>
 
 #include <librender/nodebase/camera.h>
+#include <libkernel/base/entity.h>
+#include <libkernel/base/material.h>
+#include <libkernel/base/emitter.h>
 
 namespace colvillea
 {
@@ -36,6 +39,12 @@ public:
     
     virtual void buildTLAS(const std::vector<const TriangleMesh*>& trimeshes,
                            const std::vector<uint32_t>&            instanceIDs) = 0;
+
+    virtual void buildMaterials(const std::vector<kernel::Material>& materials) = 0;
+
+    virtual void buildGeometryEntities(const std::vector<kernel::Entity>& entities) = 0;
+
+    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters) = 0;
 
     /// Render the scene.
     virtual void render() = 0;

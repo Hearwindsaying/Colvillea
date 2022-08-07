@@ -19,7 +19,9 @@
 #include <owl/owl.h>
 
 #include <libkernel/base/owldefs.h>
+#include <libkernel/base/workqueue.h>
 #include <libkernel/base/ray.h>
+#include <libkernel/base/entity.h>
 
 /// <summary>
 /// TODO: DELETE THIS.
@@ -29,19 +31,83 @@ namespace colvillea
 namespace kernel
 {
 
-struct LaunchParams
+static constexpr size_t numRayTypeCount     = 2;
+static constexpr int    primaryRayTypeIndex = 0;
+static constexpr int    shadowRayTypeIndex  = 1;
+
+#if 0
+struct PrimaryRayLaunchParams
 {
-    OptixTraversableHandle world;
+    OptixTraversableHandle world{0u};
+
+    uint32_t iterationIndex{0};
+    uint32_t width{0};
 
     //colvillea::kernel::SOAProxy<colvillea::kernel::RayWork> rayworkBuff;
-    float3* o;
-    float*  mint;
-    float3* d;
-    float*  maxt;
-    int*    pixelIndex;
+    float3* o{nullptr};
+    float*  mint{nullptr};
+    float3* d{nullptr};
+    float*  maxt{nullptr};
+    int*    pixelIndex{nullptr};
 
-    SOAProxyQueue<EvalShadingWork>* evalShadingWorkQueue;
-    SOAProxyQueue<RayEscapedWork>*  rayEscapedWorkQueue;
+    /// Geometry entities in the scene.
+    /// OptiXGetInstanceId() could retrieve the entity of current instance.
+    Entity* geometryEntities{nullptr};
+
+    /// Materials in the scene.
+    Material* materials{nullptr};
+
+    SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue{nullptr};
+    SOAProxyQueue<RayEscapedWork>*    rayEscapedWorkQueue{nullptr};
+};
+
+struct ShadowRayLaunchParams
+{
+    OptixTraversableHandle world{0u};
+
+    SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkQueue{nullptr};
+};
+
+struct LaunchParams
+{
+    PrimaryRayLaunchParams primaryRayParams;
+    ShadowRayLaunchParams  shadowRayParams;
+};
+#endif //
+
+struct LaunchParams
+{
+    /************************************************************************/
+    /*                           Primary Ray Launch Params                  */
+    /************************************************************************/
+    OptixTraversableHandle world{0u};
+
+    uint32_t iterationIndex{0};
+    uint32_t width{0};
+
+    //colvillea::kernel::SOAProxy<colvillea::kernel::RayWork> rayworkBuff;
+    float3* o{nullptr};
+    float*  mint{nullptr};
+    float3* d{nullptr};
+    float*  maxt{nullptr};
+    int*    pixelIndex{nullptr};
+
+    /// Geometry entities in the scene.
+    /// OptiXGetInstanceId() could retrieve the entity of current instance.
+    Entity* geometryEntities{nullptr};
+
+    /// Materials in the scene.
+    Material* materials{nullptr};
+
+    SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue{nullptr};
+    SOAProxyQueue<RayEscapedWork>*    rayEscapedWorkQueue{nullptr};
+
+    /************************************************************************/
+    /*                           Shadow Ray Launch Params                   */
+    /************************************************************************/
+    SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkQueue{nullptr};
+
+    uint32_t* outputBuffer{nullptr};
 };
 
 } // namespace kernel

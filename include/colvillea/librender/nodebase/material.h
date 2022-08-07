@@ -4,6 +4,8 @@
 
 #include <owl/common/math/vec.h>
 
+#include <librender/nodebase/node.h>
+
 namespace colvillea
 {
 namespace core
@@ -22,7 +24,7 @@ enum class MaterialType : uint32_t
     Diffuse
 };
 
-class Material
+class Material : public Node
 {
 public:
     static std::unique_ptr<Material> createMaterial(MaterialType type, const vec3f& reflectance);
@@ -30,7 +32,7 @@ public:
     Material(MaterialType type) :
         m_materialType{type} {}
 
-    MaterialType getShapeType() const noexcept
+    MaterialType getMaterialType() const noexcept
     {
         return this->m_materialType;
     }

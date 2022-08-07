@@ -48,10 +48,19 @@ public:
     static CL_CPU_GPU CL_INLINE vec3f squareToCosineHemisphere(const vec2f& sample)
     {
         vec2f p = squareToUniformConcentricDisk(sample);
-        float z = sqrt(1.0f - p.x * p.x - p.y * p.y);
+        float z = owl::common::sqrt(1.0f - p.x * p.x - p.y * p.y);
 
         return vec3f{p.x, p.y, z};
     }
 };
+
+/**
+ * \brief
+ *    Balanced heuristic.
+ */
+CL_CPU_GPU CL_INLINE float MISWeightBalanced(const float pdfX, const float pdfY)
+{
+    return pdfX / (pdfX + pdfY);
+}
 } // namespace kernel
 } // namespace colvillea

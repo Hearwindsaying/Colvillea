@@ -14,14 +14,33 @@ std::unique_ptr<RenderEngine> RenderEngine::createRenderEngine(std::shared_ptr<I
 
 void RenderEngine::startRendering()
 {
+    this->compileMaterials();
+
+    // Compile geometry entities for rendering.
+    this->compileEntities();
+
     // Update scene and compile AccelStructs first.
     this->compileAccelStructs();
+
+    // Compile emitters for rendering.
+    this->compileEmitters();
 
     // Update camera.
     this->m_integrator->updateCamera(this->m_scene->collectCamera());
 
+    this->resetSceneEditActions();
+
     // Start rendering.
     this->m_integrator->render();
+}
+
+void RenderEngine::compileMaterials()
+{
+    auto MaterialsCompileSource = this->m_scene->compileMaterials();
+    if (MaterialsCompileSource)
+    {
+        this->m_integrator->buildMaterials(*MaterialsCompileSource);
+    }
 }
 
 void RenderEngine::compileAccelStructs()
@@ -48,12 +67,33 @@ void RenderEngine::compileAccelStructs()
                                       (*TLASBuildDataSourceAndInstanceIDs).second);
     }
 
+    
+}
+
+void RenderEngine::compileEntities()
+{
+    auto entitiesCompileSource = this->m_scene->compileEntity();
+    if (entitiesCompileSource)
+    {
+        this->m_integrator->buildGeometryEntities(*entitiesCompileSource);
+    }
+
+}
+
+void RenderEngine::compileEmitters()
+{
+    auto emittersCompileSource = this->m_scene->compileEmitters();
+    if (emittersCompileSource)
+    {
+        this->m_integrator->buildEmitters(*emittersCompileSource);
+    }
+}
+
+void RenderEngine::resetSceneEditActions()
+{
     // Once we have done with updating scene to integrator, we should reset scene edit
     // actions.
-    if (sceneHasChanged)
-    {
-        this->m_scene->resetSceneEditActions();
-    }
+    this->m_scene->resetSceneEditActions();
 }
 
 } // namespace core

@@ -9,8 +9,12 @@ set(INTERFACE_BASE
     ${KERNEL_INCLUDE_DIR}/libkernel/base/warp.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/texture.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/material.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/emitter.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/entity.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/soa.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/workqueue.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/samplingrecord.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/sampler.h
 )
 
 set(INTERFACE_BSDFS
@@ -29,7 +33,9 @@ set(INTERFACE_MATERIALS
     ${KERNEL_INCLUDE_DIR}/libkernel/materials/diffusemtl.h
 )
 
-
+set(INTERFACE_EMITTERS
+    ${KERNEL_INCLUDE_DIR}/libkernel/emitters/directional.h
+)
 
 
 set_source_files_properties(
@@ -61,6 +67,7 @@ STATIC
     ${INTERFACE_BSDFS}
     ${INTERFACE_SHAPES}
     ${INTERFACE_MATERIALS}
+    ${INTERFACE_EMITTERS}
     ${SOURCE_INTEGRATORS}
     ${SOURCE_BASE}
     ${SOURCE_BSDFS}
@@ -88,6 +95,7 @@ source_group("interface/integrators" FILES ${INTERFACE_INTEGRATORS})
 source_group("interface/bsdfs" FILES ${INTERFACE_BSDFS})
 source_group("interface/shapes" FILES ${INTERFACE_SHAPES})
 source_group("interface/materials" FILES ${INTERFACE_MATERIALS})
+source_group("interface/emitters" FILES ${INTERFACE_EMITTERS})
 source_group("source/integrators" FILES ${SOURCE_INTEGRATORS})
 source_group("source/base" FILES ${SOURCE_BASE})
 source_group("source/bsdfs" FILES ${SOURCE_BSDFS})

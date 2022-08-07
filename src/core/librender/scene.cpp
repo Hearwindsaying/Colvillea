@@ -1,7 +1,11 @@
 #include <memory>
 
 #include <nodes/shapes/trianglemesh.h>
+#include <nodes/materials/diffusemtl.h>
+#include <nodes/emitters/directional.h>
 #include <librender/scene.h>
+
+#include <spdlog/spdlog.h>
 
 namespace colvillea
 {
@@ -10,26 +14,6 @@ namespace core
 std::unique_ptr<Scene> Scene::createScene()
 {
     return std::make_unique<Scene>();
-}
-
-void Scene::addTriangleMesh(std::unique_ptr<TriangleMesh> triMesh)
-{
-    this->m_trimeshes.push_back(std::move(triMesh));
-    this->m_editActions.addAction(SceneEditAction::EditActionType::ShapeAdded);
-}
-
-void Scene::addTriangleMeshes(std::vector<std::unique_ptr<TriangleMesh>>&& trimeshes)
-{
-    this->m_trimeshes.insert(this->m_trimeshes.end(),
-                             std::make_move_iterator(trimeshes.begin()),
-                             std::make_move_iterator(trimeshes.end()));
-    this->m_editActions.addAction(SceneEditAction::EditActionType::ShapeAdded);
-}
-
-void Scene::addMaterial(std::shared_ptr<Material> material)
-{
-    this->m_materials.push_back(material);
-    this->m_editActions.addAction(SceneEditAction::EditActionType::MaterialAdded);
 }
 
 std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuilding() const
@@ -41,13 +25,12 @@ std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuild
     {
         std::vector<TriangleMesh*> trimeshes;
 
-        // Collect trimesh from entities.
-        for (const auto& entity : this->m_entities)
+        // Collect trimesh from trimeshes cache, which contains unique trimesh data.
+        for (const auto& trimesh : this->m_trimeshes)
         {
-            TriangleMesh* trimesh = entity->getTrimesh();
             if (trimesh->getTriMeshBLAS()->needRebuildBLAS())
             {
-                trimeshes.push_back(trimesh);
+                trimeshes.push_back(trimesh.get());
             }
         }
 
@@ -57,10 +40,10 @@ std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuild
     return {};
 }
 
-std::optional<std::pair<std::vector<const TriangleMesh*>,
-                        std::vector<uint32_t>>>
+std::optional<std::pair<std::vector<const TriangleMesh*>, std::vector<uint32_t>>>
 Scene::collectTriangleMeshForTLASBuilding() const
 {
+    // TODO: Edit?
     if (this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeAdded) ||
         this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeRemoved))
     {
@@ -83,6 +66,101 @@ Scene::collectTriangleMeshForTLASBuilding() const
         return std::make_optional(std::make_pair(std::move(dirtyMeshes), std::move(instanceIDs)));
     }
     
+    return {};
+}
+
+std::optional<std::vector<kernel::Entity>> Scene::compileEntity() const
+{
+    if (this->m_editActions.hasAction(SceneEditAction::EditActionType::AnyEntityModification))
+    {
+        spdlog::info("Compiling entities in the scene.");
+
+        std::vector<kernel::Entity> kernelEntities;
+        kernelEntities.resize(this->m_entities.size());
+
+        for (auto i = 0; i < this->m_entities.size(); ++i)
+        {
+            const core::Entity& coreEntity = *this->m_entities[i];
+
+            // Figure out the material index in materials buffer.
+            // We assume that all m_materials should be uploaded.
+            auto foundMaterialIter = std::find_if(this->m_materials.cbegin(),
+                                                  this->m_materials.cend(),
+                                                  [materialId = coreEntity.getMaterial()->getID()](const auto& coreMtlPtr) {
+                                                      return materialId == coreMtlPtr->getID();
+                                                  });
+
+            assert(foundMaterialIter != this->m_materials.cend());
+            uint32_t materialIndexToKernelMtls = foundMaterialIter - this->m_materials.cbegin(); 
+
+            spdlog::info("  Entity[id={}] with material[id={}]'s materialIndexToKernelMtls is {}",
+                         coreEntity.getID(), coreEntity.getMaterial()->getID(), materialIndexToKernelMtls);
+
+            // Fill in kernel entity.
+            kernelEntities[i] = kernel::Entity{materialIndexToKernelMtls};
+        }
+
+        return std::make_optional(std::move(kernelEntities));
+    }
+    
+    return {};
+}
+
+std::optional<std::vector<kernel::Material>> Scene::compileMaterials() const
+{
+    if (this->m_editActions.hasAction(SceneEditAction::EditActionType::AnyMaterialModification))
+    {
+        std::vector<kernel::Material> materials;
+        materials.resize(this->m_materials.size());
+
+        for (auto i = 0; i < this->m_materials.size(); ++i)
+        {
+            const core::Material& coreMtl = *this->m_materials[i];
+            if (coreMtl.getMaterialType() == MaterialType::Diffuse)
+            {
+                kernel::DiffuseMtl kDiffuseMtl{static_cast<const DiffuseMtl*>(&coreMtl)->getReflectance()};
+                kernel::Material kernelMtl{kDiffuseMtl};
+
+                materials[i] = kernelMtl;
+            }
+            assert(coreMtl.getMaterialType() == MaterialType::Diffuse);
+        }
+
+        return std::make_optional(std::move(materials));
+    }
+
+    return {};
+}
+
+std::optional<std::vector<kernel::Emitter>> Scene::compileEmitters() const
+{
+    if (this->m_editActions.hasAction(SceneEditAction::EditActionType::AnyEmitterModification))
+    {
+        std::vector<kernel::Emitter> kernelEmitters;
+        kernelEmitters.resize(this->m_emitters.size());
+
+        for (auto i = 0; i < this->m_emitters.size(); ++i)
+        {
+            const core::Emitter& coreEmitter = *this->m_emitters[i];
+
+            assert(coreEmitter.getEmitterType() == kernel::EmitterType::Directional);
+            if (coreEmitter.getEmitterType() == kernel::EmitterType::Directional)
+            {
+                const core::DirectionalEmitter* coreDirectionalEmitter = static_cast<const core::DirectionalEmitter*>(&coreEmitter);
+
+                kernel::DirectionalEmitter directionalEmitter{coreDirectionalEmitter->getIntensity(),
+                                                              coreDirectionalEmitter->getDirection(),
+                                                              coreDirectionalEmitter->getAngularRadius()};
+                
+                kernel::Emitter kernelEmitter{directionalEmitter};
+
+                kernelEmitters[i] = kernelEmitter;
+            }
+        }
+
+        return std::make_optional(std::move(kernelEmitters));
+    }
+
     return {};
 }
 

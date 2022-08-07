@@ -62,8 +62,18 @@ public:
     }
 
 protected:
+    /************************************************************************/
+    /*             Compile Renderables to kernel-ready form.                */
+    /************************************************************************/
+    void compileMaterials();
+
     void compileAccelStructs();
 
+    void compileEntities();
+
+    void compileEmitters();
+
+    void resetSceneEditActions();
 
 protected:
     std::shared_ptr<Integrator> m_integrator;

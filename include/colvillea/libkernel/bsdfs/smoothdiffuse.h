@@ -6,7 +6,7 @@
 
 #include "device_launch_parameters.h"
 
-#include <libkernel/base/bsdf.h>
+#include <libkernel/base/samplingrecord.h>
 #include <libkernel/base/frame.h>
 #include <libkernel/base/warp.h>
 #include <libkernel/base/math.h>
@@ -55,7 +55,7 @@ public:
     }
 
     CL_CPU_GPU
-    vec3f sample(BSDFSamplingRecord* bRec, float* pdf, const vec2f& sample)
+    vec3f sample(BSDFSamplingRecord* bRec, float* pdf, const vec2f& sample) const
     {
         assert(bRec != nullptr && pdf != nullptr);
 

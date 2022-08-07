@@ -21,6 +21,11 @@ public:
         m_reflectance(reflectance),
         Material{MaterialType::Diffuse} {}
 
+    const vec3f& getReflectance() const noexcept
+    {
+        return this->m_reflectance;
+    }
+
     ~DiffuseMtl() {}
 
 private:

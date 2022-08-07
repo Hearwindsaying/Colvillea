@@ -156,58 +156,6 @@ struct SOAProxy<RayWork>
     }
 };
 
-struct EvalShadingWork
-{
-    float3 ng;
-    float3 rayDirection;
-    int    pixelIndex{0};
-};
-
-template <>
-struct SOAProxy<EvalShadingWork>
-{
-    /// device pointers.
-    float3* ng;
-    float3* rayDirection;
-    int*    pixelIndex;
-
-    uint32_t arraySize{0};
-
-    SOAProxy(void* devicePtr, uint32_t numElements) :
-        arraySize{numElements}
-    {
-        this->ng           = static_cast<float3*>(devicePtr);
-        this->rayDirection = reinterpret_cast<float3*>(&this->ng[numElements]);
-        this->pixelIndex   = reinterpret_cast<int*>(&this->rayDirection[numElements]);
-    }
-
-    static constexpr size_t StructureSize =
-        sizeof(std::remove_pointer_t<decltype(ng)>) +
-        sizeof(std::remove_pointer_t<decltype(rayDirection)>) +
-        sizeof(std::remove_pointer_t<decltype(pixelIndex)>);
-
-    __device__ __host__ void setVar(int index, const EvalShadingWork& evalShadingWork)
-    {
-        assert(index < arraySize && index >= 0);
-
-        this->ng[index]           = evalShadingWork.ng;
-        this->rayDirection[index] = evalShadingWork.rayDirection;
-        this->pixelIndex[index]   = evalShadingWork.pixelIndex;
-    }
-
-    __device__ EvalShadingWork getVar(int index) const
-    {
-        assert(index < arraySize && index >= 0);
-
-        EvalShadingWork evalShadingWork;
-        evalShadingWork.ng           = this->ng[index];
-        evalShadingWork.rayDirection = this->rayDirection[index];
-        evalShadingWork.pixelIndex   = this->pixelIndex[index];
-
-        return evalShadingWork;
-    }
-};
-
 struct RayEscapedWork
 {
     int pixelIndex{0};
@@ -248,65 +196,7 @@ struct SOAProxy<RayEscapedWork>
     }
 };
 
-template <typename WorkType>
-class SOAProxyQueue
-{
-public:
-    /// Traits helper.
-    using SOAProxyType = SOAProxy<WorkType>;
 
-private:
-    /// SOA data.
-    SOAProxy<WorkType> workSOA;
-
-    /// Size recording number of valid entries in the queue.
-    //cuda::atomic<int, cuda::thread_scope_device> queueSize{0};
-    uint32_t queueSize{0};
-
-    /// Allocated maximum number of space for the queue.
-    const uint32_t queueCapacity{0};
-
-private:
-    __device__ int allocateEntry()
-    {
-        assert(this->queueSize < queueCapacity);
-
-        // fetch_add returns the old value.
-        //return this->queueSize.fetch_add(1, cuda::std::memory_order_relaxed);
-        return atomicAdd(&this->queueSize, 1);
-    }
-
-public:
-    __host__ SOAProxyQueue(const SOAProxy<WorkType>& workItemsSOA, const uint32_t capacity) :
-        workSOA{workItemsSOA}, queueCapacity{capacity}
-    {
-    }
-
-    __device__ void pushWorkItem(const WorkType& work)
-    {
-        this->workSOA.setVar(this->allocateEntry(), work);
-    }
-
-    __device__ const SOAProxy<WorkType>& getWorkSOA() const
-    {
-        return this->workSOA;
-    }
-
-    __device__ int size() const
-    {
-        //return this->queueSize.load(cuda::std::memory_order_relaxed);
-        return this->queueSize;
-    }
-
-    /**
-     * \brief
-     *    Reset Queue size.
-     */
-    __device__ void resetQueueSize()
-    {
-        this->queueSize = 0;
-    }
-};
 
 
 

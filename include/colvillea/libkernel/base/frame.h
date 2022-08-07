@@ -77,7 +77,7 @@ struct Frame
     CL_CPU_GPU CL_INLINE static float sinTheta(const vec3f& v)
     {
         float tmp = Frame::sin2Theta(v);
-        return tmp <= 0.f ? 0.f : sqrt(tmp);
+        return tmp <= 0.f ? 0.f : owl::common::sqrt(tmp);
     }
 
     CL_CPU_GPU CL_INLINE static float tanTheta(const vec3f& v)

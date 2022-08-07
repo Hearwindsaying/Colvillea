@@ -4,6 +4,7 @@
 
 #include <librender/nodebase/material.h>
 #include <librender/nodebase/shape.h>
+#include <librender/nodebase/node.h>
 #include <nodes/shapes/trianglemesh.h>
 
 namespace colvillea
@@ -15,7 +16,7 @@ namespace core
  *    Entity represents a renderer-able entity composed of
  * Material and Shape.
  */
-class Entity
+class Entity : public Node
 {
 public:
     Entity(std::shared_ptr<Material> mtl, std::shared_ptr<TriangleMesh> trimesh) :
@@ -31,6 +32,24 @@ public:
     Material* getMaterial() const noexcept
     {
         return this->m_material.get();
+    }
+
+    /**
+     * \brief
+     *    Get a valid trianglemesh smart pointer, ownership will
+     * be shared calling this function.
+     * 
+     * \return 
+     *    Strong shared_ptr holding TriMesh ownership.
+     */
+    std::shared_ptr<TriangleMesh> getTrimeshSharing() const noexcept
+    {
+        return this->m_trimesh;
+    }
+
+    std::shared_ptr<Material> getMaterialSharing() const noexcept
+    {
+        return this->m_material;
     }
 
 

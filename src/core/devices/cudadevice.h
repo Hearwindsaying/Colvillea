@@ -31,9 +31,9 @@ public:
      * \brief
      *    Launch generate primary camera rays kernel.
      */
-    void launchGenerateCameraRaysKernel(kernel::SOAProxy<kernel::RayWork> rayworkBuff, int nItems, uint32_t width, uint32_t height, kernel::vec3f camera_pos, kernel::vec3f camera_d00, kernel::vec3f camera_ddu, kernel::vec3f camera_ddv)
+    void launchGenerateCameraRaysKernel(kernel::SOAProxy<kernel::RayWork> rayworkBuff, int nItems, uint32_t width, uint32_t height, kernel::vec3f camera_pos, kernel::vec3f camera_d00, kernel::vec3f camera_ddu, kernel::vec3f camera_ddv, uint32_t* outputBuffer)
     {
-        this->launchKernelSync(&kernel::generateCameraRays, nItems, rayworkBuff, nItems, width, height, camera_pos, camera_d00, camera_ddu, camera_ddv);
+        this->launchKernelSync(&kernel::generateCameraRays, nItems, rayworkBuff, nItems, width, height, camera_pos, camera_d00, camera_ddu, camera_ddv, outputBuffer);
     }
 
     /**
@@ -50,17 +50,25 @@ public:
      * \brief
      *    Launch shading kernel.
      */
-    void launchEvaluateShadingKernel(kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueue, int nItems, uint32_t* outputBuffer)
+    void launchEvaluateMaterialsAndLightsKernel(int                                               nItems,
+                                                kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
+                                                const kernel::Emitter*                            emitters,
+                                                uint32_t                                          numEmitters,
+                                                kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueue)
     {
-        assert(evalShadingWorkQueue != nullptr && outputBuffer != nullptr);
-        this->launchKernelSync(&kernel::evaluateShading, nItems, evalShadingWorkQueue, outputBuffer);
+        assert(evalMaterialsWorkQueue != nullptr &&
+               emitters != nullptr &&
+               evalShadowRayWorkQueue != nullptr);
+        this->launchKernelSync(&kernel::evaluateMaterialsAndLights, nItems,
+                               evalMaterialsWorkQueue, emitters, numEmitters, evalShadowRayWorkQueue);
     }
 
-    void launchResetQueuesKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>*  escapedRayQueue,
-                                 kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueue)
+    void launchResetQueuesKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>*    escapedRayQueue,
+                                 kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
+                                 kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueue)
     {
-        assert(evalShadingWorkQueue != nullptr && evalShadingWorkQueue != nullptr);
-        this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalShadingWorkQueue);
+        assert(escapedRayQueue != nullptr && evalMaterialsWorkQueue != nullptr && evalShadowRayWorkQueue != nullptr);
+        this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalMaterialsWorkQueue, evalShadowRayWorkQueue);
     }
 
 

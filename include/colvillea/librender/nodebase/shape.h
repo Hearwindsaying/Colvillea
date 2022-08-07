@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#include <librender/nodebase/node.h>
+
 namespace colvillea
 {
 namespace core
@@ -22,7 +24,7 @@ enum class ShapeType : uint32_t
  * shape should also associate with its hardware acceleration
  * structures.
  */
-class Shape
+class Shape : public Node
 {
 public:
     Shape(ShapeType type) :

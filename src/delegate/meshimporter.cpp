@@ -33,7 +33,7 @@ std::unique_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube()
     return std::make_unique<core::TriangleMesh>(std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles));
 }
 
-std::vector<std::unique_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const std::filesystem::path& meshfile)
+std::vector<std::shared_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const std::filesystem::path& meshfile)
 {
     spdlog::info("Loading triangle meshes from {} by assimp.", meshfile.string().c_str());
 
@@ -51,7 +51,7 @@ std::vector<std::unique_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const 
         return {};
     }
 
-    std::vector<std::unique_ptr<core::TriangleMesh>> meshes;
+    std::vector<std::shared_ptr<core::TriangleMesh>> meshes;
 
     // process ASSIMP's root node recursively
     processNode(meshes, scene->mRootNode, scene);
@@ -59,7 +59,7 @@ std::vector<std::unique_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const 
     return meshes;
 }
 
-void MeshImporter::processNode(std::vector<std::unique_ptr<core::TriangleMesh>>& meshes, aiNode* node, const aiScene* scene)
+void MeshImporter::processNode(std::vector<std::shared_ptr<core::TriangleMesh>>& meshes, aiNode* node, const aiScene* scene)
 {
     assert(node != nullptr && scene != nullptr);
 
@@ -78,7 +78,7 @@ void MeshImporter::processNode(std::vector<std::unique_ptr<core::TriangleMesh>>&
     }
 }
 
-std::unique_ptr<core::TriangleMesh> MeshImporter::processMesh(aiMesh* mesh, const aiScene* scene)
+std::shared_ptr<core::TriangleMesh> MeshImporter::processMesh(aiMesh* mesh, const aiScene* scene)
 {
     assert(mesh != nullptr && scene != nullptr);
 

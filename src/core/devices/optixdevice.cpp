@@ -24,6 +24,8 @@ OptiXDevice::OptiXDevice() :
 {
     spdlog::info("Successfully created OptiX-Owl context!");
 
+    owlContextSetRayTypeCount(this->m_owlContext, kernel::numRayTypeCount);
+
     this->m_owlModule = owlModuleCreate(this->m_owlContext, optix_ptx);
     spdlog::info("Successfully created OptiX-Owl module!");
 
@@ -51,18 +53,28 @@ OptiXDevice::OptiXDevice() :
     // set up miss prog
     // -------------------------------------------------------
     // ----------- create object  ----------------------------
-    this->m_miss = owlMissProgCreate(this->m_owlContext,
-                                     this->m_owlModule,
-                                     "miss",
-                                     0,
-                                     nullptr,
-                                     0);
+    this->m_missPrimaryRay = owlMissProgCreate(this->m_owlContext,
+                                               this->m_owlModule,
+                                               "primaryRay",
+                                               0,
+                                               nullptr,
+                                               0);
+    this->m_missShadowRay  = owlMissProgCreate(this->m_owlContext,
+                                               this->m_owlModule,
+                                               "shadowRay",
+                                               0,
+                                               nullptr,
+                                               0);
 
     // -------------------------------------------------------
     // set up ray gen program
     // -------------------------------------------------------
     OWLVarDecl launchParamsVars[] = {
         {"world", OWL_GROUP, OWL_OFFSETOF(kernel::LaunchParams, world)},
+
+        // Iteration index for sampler
+        {"iterationIndex", OWL_UINT, OWL_OFFSETOF(kernel::LaunchParams, iterationIndex)},
+        {"width", OWL_UINT, OWL_OFFSETOF(kernel::LaunchParams, width)},
 
         // RayBuffer.
         {"o", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, o)},
@@ -71,8 +83,15 @@ OptiXDevice::OptiXDevice() :
         {"maxt", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, maxt)},
         {"pixelIndex", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, pixelIndex)},
 
-        {"evalShadingWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, evalShadingWorkQueue)},
+        {"geometryEntities", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, geometryEntities)},
+        {"materials", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, materials)},
+
+        {"evalMaterialsWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, evalMaterialsWorkQueue)},
         {"rayEscapedWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, rayEscapedWorkQueue)},
+
+        /***************************************************************/
+        {"evalShadowRayWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, evalShadowRayWorkQueue)},
+        {"outputBuffer", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, outputBuffer)},
 
         {/* sentinel to mark end of list */}};
 
@@ -80,8 +99,10 @@ OptiXDevice::OptiXDevice() :
                                            launchParamsVars, -1);
 
     // ----------- create object  ----------------------------
-    this->m_raygen = owlRayGenCreate(this->m_owlContext, this->m_owlModule, "raygen",
-                                     0, nullptr, 0);
+    this->m_raygenPrimaryRay = owlRayGenCreate(this->m_owlContext, this->m_owlModule, "primaryRay",
+                                               0, nullptr, 0);
+    this->m_raygenShadowRay  = owlRayGenCreate(this->m_owlContext, this->m_owlModule, "shadowRay",
+                                               0, nullptr, 0);
 
     // Programs and pipelines only need to be bound once.
     // SBT should be built on demand.
@@ -95,7 +116,8 @@ OptiXDevice::~OptiXDevice()
     // Owl is lacking release for GeomType (will be destroyed by context anyway).
     //owlGeomTypeRelease()
 
-    owlRayGenRelease(this->m_raygen);
+    owlRayGenRelease(this->m_raygenPrimaryRay);
+    owlRayGenRelease(this->m_raygenShadowRay);
     // missing miss.
 
     owlModuleRelease(this->m_owlModule);
@@ -180,9 +202,9 @@ void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& tr
     owlBuildSBT(this->m_owlContext);
 }
 
-void OptiXDevice::bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&              rayworkBufferSOA,
-                                    const kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueueDevicePtr,
-                                    const kernel::SOAProxyQueue<kernel::RayEscapedWork>*  rayEscapedQueueDevicePtr)
+void OptiXDevice::bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&                rayworkBufferSOA,
+                                    const kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueueDevicePtr,
+                                    const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr)
 {
     owlParamsSet1ul(this->m_launchParams, "o", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.o));
     owlParamsSet1ul(this->m_launchParams, "mint", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.mint));
@@ -190,23 +212,50 @@ void OptiXDevice::bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&    
     owlParamsSet1ul(this->m_launchParams, "maxt", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.maxt));
     owlParamsSet1ul(this->m_launchParams, "pixelIndex", reinterpret_cast<uint64_t>(rayworkBufferSOA.pixelIndex));
 
-    assert(evalShadingWorkQueueDevicePtr != nullptr && rayEscapedQueueDevicePtr != nullptr);
-    owlParamsSet1ul(this->m_launchParams, "evalShadingWorkQueue", reinterpret_cast<uint64_t>(evalShadingWorkQueueDevicePtr));
+    assert(evalMaterialsWorkQueueDevicePtr != nullptr && rayEscapedQueueDevicePtr != nullptr);
+    owlParamsSet1ul(this->m_launchParams, "evalMaterialsWorkQueue", reinterpret_cast<uint64_t>(evalMaterialsWorkQueueDevicePtr));
     owlParamsSet1ul(this->m_launchParams, "rayEscapedWorkQueue", reinterpret_cast<uint64_t>(rayEscapedQueueDevicePtr));
 
-    owlBuildSBT(this->m_owlContext);
+    //owlBuildSBT(this->m_owlContext);
+}
+
+void OptiXDevice::bindMaterialsBuffer(const kernel::Material* materialsDevicePtr)
+{
+    owlParamsSet1ul(this->m_launchParams, "materials", reinterpret_cast<uint64_t>(materialsDevicePtr));
+}
+
+void OptiXDevice::bindEntitiesBuffer(const kernel::Entity* entitiesDevicePtr)
+{
+    owlParamsSet1ul(this->m_launchParams, "geometryEntities", reinterpret_cast<uint64_t>(entitiesDevicePtr));
+}
+
+void OptiXDevice::launchTraceShadowRayKernel(size_t                                            nItems,
+                                             uint32_t*                                         outputBufferDevPtr,
+                                             kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr)
+{
+    spdlog::info("OptiX Device launching tracing shadow rays kernel.");
+
+    owlParamsSet1ul(this->m_launchParams, "outputBuffer", reinterpret_cast<uint64_t>(outputBufferDevPtr));
+    owlParamsSet1ul(this->m_launchParams, "evalShadowRayWorkQueue", reinterpret_cast<uint64_t> (evalShadowRayWorkQueueDevPtr));
+
+    // OWL does not support 1D launching...
+    owlLaunch2D(this->m_raygenShadowRay, nItems, 1, this->m_launchParams);
 }
 
 
-void OptiXDevice::launchTraceRayKernel(size_t nItems)
+void OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width)
 {
     // ##################################################################
     // now that everything is ready: launch it ....
     // ##################################################################
 
-    spdlog::info("launching ...");
+    spdlog::info("OptiX Device launching tracing primary rays kernel with iteration {}, framebuffer width {}.", iterationIndex, width);
+
+    owlParamsSet1ui(this->m_launchParams, "iterationIndex", iterationIndex);
+    owlParamsSet1ui(this->m_launchParams, "width", width);
+
     // OWL does not support 1D launching...
-    owlLaunch2D(this->m_raygen, nItems, 1, this->m_launchParams);
+    owlLaunch2D(this->m_raygenPrimaryRay, nItems, 1, this->m_launchParams);
 }
 } // namespace core
 } // namespace colvillea

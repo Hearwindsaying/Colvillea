@@ -7,6 +7,7 @@
 #include <librender/scene.h>
 #include <librender/entity.h>
 #include <librender/nodebase/material.h>
+#include <librender/nodebase/emitter.h>
 
 #include <delegate/meshimporter.h>
 
@@ -35,15 +36,19 @@ int main(int argc, char* argv[])
     /*pScene->addTriangleMeshes(std::move(objMeshes));
     pScene->addTriangleMesh(std::move(cubeMesh));*/
 
-
-    std::shared_ptr<core::TriangleMesh> cubeMesh = delegate::MeshImporter::loadDefaultCube();
+    auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
+    //std::shared_ptr<core::TriangleMesh> cubeMesh = delegate::MeshImporter::loadDefaultCube();
     std::shared_ptr<core::Material>
         pMaterial = core::Material::createMaterial(core::MaterialType::Diffuse, vec3f{1.0f});
 
-    std::shared_ptr<core::Entity> pEntity = std::make_shared<core::Entity>(pMaterial, cubeMesh);
-    pSceneViewer->addEntity(pEntity);
-
-
+    for (const auto& triMesh : objMeshes)
+    {
+        std::shared_ptr<core::Entity> pEntity = std::make_shared<core::Entity>(pMaterial, triMesh);
+        pSceneViewer->addEntity(pEntity);
+    }
+    
+    std::shared_ptr<core::Emitter> directionalEmitter = core::Emitter::createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 0.5f);
+    pSceneViewer->addEmitter(directionalEmitter);
 
     /*pRenderEngine->startRendering();
     pRenderEngine->endRendering();*/

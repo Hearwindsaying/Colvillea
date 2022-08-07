@@ -6,6 +6,8 @@
 #include <librender/asdataset.h>
 
 #include <libkernel/base/ray.h>
+#include <libkernel/base/entity.h>
+#include <libkernel/base/workqueue.h>
 
 #include <owl/owl.h>
 
@@ -37,17 +39,26 @@ public:
     void buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimeshes);
 
     /// Create and build a TLASDataSet out of trimeshes.
+    /// instanceIDs goes to OptiX InstanceId() which should store the
+    /// index to geometryEntities array.
     void buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes,
-                             const std::vector</*const */uint32_t>&  instanceIDs);
+                             const std::vector</*const */ uint32_t>& instanceIDs);
 
-    void bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>& rayworkBufferSOA,
-                           const kernel::SOAProxyQueue<kernel::EvalShadingWork>* evalShadingWorkQueueDevicePtr,
-                           const kernel::SOAProxyQueue<kernel::RayEscapedWork>* rayEscapedQueueDevicePtr);
+    void bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&                rayworkBufferSOA,
+                           const kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueueDevicePtr,
+                           const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr);
+
+    void bindMaterialsBuffer(const kernel::Material* materialsDevicePtr);
+
+    void bindEntitiesBuffer(const kernel::Entity* entitiesDevicePtr);
 
     /// Launch OptiX intersection kernel to trace rays and read back
     /// intersection information.
-    void launchTraceRayKernel(size_t nItems);
+    void launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width);
 
+    void launchTraceShadowRayKernel(size_t                                            nItems,
+                                    uint32_t*                                         outputBufferDevPtr,
+                                    kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr);
 
 private:
     struct WrappedOWLContext
@@ -62,7 +73,7 @@ private:
         WrappedOWLContext(WrappedOWLContext&&)      = delete;
         WrappedOWLContext& operator=(const WrappedOWLContext&) = delete;
         WrappedOWLContext& operator=(WrappedOWLContext&&) = delete;
-        
+
         ~WrappedOWLContext()
         {
             assert(this->owlContext);
@@ -94,8 +105,10 @@ private:
     OWLGeomType m_owlTriMeshGeomType{nullptr};
 
     /// Ray generation and miss programs.
-    OWLRayGen   m_raygen{nullptr};
-    OWLMissProg m_miss{nullptr};
+    OWLRayGen   m_raygenPrimaryRay{nullptr};
+    OWLRayGen   m_raygenShadowRay{nullptr};
+    OWLMissProg m_missPrimaryRay{nullptr};
+    OWLMissProg m_missShadowRay{nullptr};
 
     /// LaunchParams.
     OWLParams m_launchParams{nullptr};

@@ -2,11 +2,12 @@
 
 #include <vector>
 
-#include <libkernel/base/ray.h>
-
 #include <librender/integrator.h>
 #include <librender/device.h>
 #include <nodes/shapes/trianglemesh.h>
+
+#include <libkernel/base/ray.h>
+#include <libkernel/base/workqueue.h>
 
 #include "../devices/cudabuffer.h"
 
@@ -27,6 +28,12 @@ public:
 
     virtual void buildTLAS(const std::vector<const TriangleMesh*>& trimeshes,
                            const std::vector<uint32_t>&            instanceIDs) override;
+
+    virtual void buildMaterials(const std::vector<kernel::Material>& materials) override;
+
+    virtual void buildGeometryEntities(const std::vector<kernel::Entity>& entities) override;
+
+    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters) override;
 
     virtual void render() override;
 
@@ -49,11 +56,19 @@ protected:
 
     std::unique_ptr<DeviceBuffer> m_rayworkBuff;
 
+    uint32_t m_iterationIndex{0};
+
     uint32_t m_queueCapacity{0};
 
 
-    SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadingWork>> m_evalShadingWorkQueueBuff;
+    SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalMaterialsWork>> m_evalMaterialsWorkQueueBuff;
+    SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>> m_evalShadowRayWorkQueueBuff;
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>  m_rayEscapedWorkQueueBuff;
+
+    std::unique_ptr<DeviceBuffer> m_geometryEntitiesBuff;
+    std::unique_ptr<DeviceBuffer> m_materialsBuff;
+    std::unique_ptr<DeviceBuffer> m_emittersBuff;
+    uint32_t                      m_numEmitters{0};
 
 private:
     //ManagedDeviceBuffer m_outputBuff;

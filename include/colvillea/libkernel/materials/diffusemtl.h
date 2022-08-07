@@ -2,6 +2,7 @@
 
 #include <libkernel/base/texture.h>
 #include <libkernel/bsdfs/smoothdiffuse.h>
+#include <libkernel/base/bsdf.h>
 
 namespace colvillea
 {
@@ -9,13 +10,14 @@ namespace kernel
 {
 class DiffuseMtl/* : public Material*/
 {
+public:
     //CL_CPU_GPU DiffuseMtl(const Texture2D& reflectanceTex) {}
     CL_CPU_GPU CL_INLINE DiffuseMtl(const vec3f& reflectance) :
         m_reflectance{reflectance} {}
 
-    CL_CPU_GPU CL_INLINE const SmoothDiffuse getBSDF() const
+    CL_CPU_GPU CL_INLINE BSDF getBSDF() const
     {
-        return SmoothDiffuse{this->m_reflectance};
+        return BSDF{SmoothDiffuse{this->m_reflectance}};
     }
 
 private:
