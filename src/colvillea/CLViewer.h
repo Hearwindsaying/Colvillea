@@ -91,7 +91,7 @@ struct CLViewer
              const std::string&                  title          = "Colvillea Demo",
              const vec2i&                        initWindowSize = vec2i(1200, 800),
              bool                                visible        = true,
-             bool                                enableVsync    = true
+             bool                                enableVsync    = false
              // ,
              // const vec3f &cameraInitFrom = vec3f(0,0,-1),
              // const vec3f &cameraInitAt   = vec3f(0,0,0),

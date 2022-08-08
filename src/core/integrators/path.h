@@ -45,6 +45,11 @@ public:
 
     virtual void mapFramebuffer() override;
 
+    virtual std::pair<uint32_t, uint32_t> getFilmSize() override
+    {
+        return std::make_pair(this->m_width, this->m_height);
+    }
+
     virtual void updateCamera(const Camera& camera) override
     {
         this->m_camera = camera;

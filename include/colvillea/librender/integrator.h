@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 
 #include <nodes/shapes/trianglemesh.h>
 
@@ -59,6 +60,8 @@ public:
 
     virtual void mapFramebuffer() = 0;
     
+    virtual std::pair<uint32_t, uint32_t> getFilmSize() = 0;
+
     /// TODOs: delete this.
     virtual void updateCamera(const Camera& camera) = 0;
 

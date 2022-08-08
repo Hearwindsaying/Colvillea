@@ -22,6 +22,8 @@ int main(int argc, char* argv[])
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
+    //_CrtSetBreakAlloc(562);
+
     auto dir = std::filesystem::weakly_canonical(std::filesystem::path(argv[0])).parent_path();
 
     /*auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");

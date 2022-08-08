@@ -46,6 +46,11 @@ public:
         this->m_integrator->resize(width, height);
     }
 
+    std::pair<uint32_t, uint32_t> getFilmSize() const noexcept
+    {
+        return this->m_integrator->getFilmSize();
+    }
+
     void mapFramebuffer()
     {
         this->m_integrator->mapFramebuffer();

@@ -19,6 +19,7 @@ add_executable(colvillea ${COLVILLEA_SOURCES})
 
 target_link_libraries(colvillea
 PRIVATE
+    imgui-docking
     owl::owl
     glfw
     OpenGL::GL
