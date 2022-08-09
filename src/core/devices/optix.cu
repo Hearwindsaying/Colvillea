@@ -145,8 +145,7 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 
     evalMtlsWork.wo         = optixGetWorldRayDirection();
     evalMtlsWork.wo         = -evalMtlsWork.wo;
-    evalMtlsWork.sampleSeed = Sampler::initSamplerSeed(pixelIndexToPixelPos(pixelIndex, optixLaunchParams.width),
-                                                       optixLaunchParams.iterationIndex);
+    evalMtlsWork.sampleSeed = optixLaunchParams.randSeed[jobId];
     evalMtlsWork.pixelIndex = pixelIndex;
 
     optixLaunchParams.evalMaterialsWorkQueue->pushWorkItem(evalMtlsWork);

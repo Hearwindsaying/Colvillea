@@ -4,6 +4,8 @@
 #include <limits>
 #include <cassert>
 
+//#include <libkernel/base/math.h>
+#include <libkernel/base/owldefs.h>
 #include <libkernel/base/soa.h>
 
 #ifdef __INTELLISENSE__
@@ -113,8 +115,9 @@ struct SOAProxy<Ray>
 
 struct RayWork
 {
-    Ray ray;
-    int pixelIndex{0};
+    Ray    ray;
+    int    pixelIndex{0};
+    vec4ui randSeed{0};
 };
 
 template <>
@@ -123,6 +126,7 @@ struct SOAProxy<RayWork>
     /// device pointers.
     SOAProxy<Ray> ray;
     int*          pixelIndex;
+    vec4ui*       randSeed;
 
     uint32_t arraySize{0};
 
@@ -130,11 +134,13 @@ struct SOAProxy<RayWork>
         arraySize{numElements}, ray{devicePtr, numElements}
     {
         this->pixelIndex = static_cast<int*>(ray.getEndAddress());
+        this->randSeed   = reinterpret_cast<vec4ui*>(&this->pixelIndex[numElements]);
     }
 
     static constexpr size_t StructureSize =
         decltype(ray)::StructureSize +
-        sizeof(std::remove_pointer_t<decltype(pixelIndex)>);
+        sizeof(std::remove_pointer_t<decltype(pixelIndex)>) +
+        sizeof(std::remove_pointer_t<decltype(randSeed)>);
 
     __device__ __host__ void setVar(int index, const RayWork& raywork)
     {
@@ -142,6 +148,7 @@ struct SOAProxy<RayWork>
 
         this->ray.setVar(index, raywork.ray);
         this->pixelIndex[index] = raywork.pixelIndex;
+        this->randSeed[index]   = raywork.randSeed;
     }
 
     __device__ RayWork getVar(int index) const
@@ -151,6 +158,7 @@ struct SOAProxy<RayWork>
         RayWork raywork;
         raywork.ray        = this->ray.getVar(index);
         raywork.pixelIndex = this->pixelIndex[index];
+        raywork.randSeed   = this->randSeed[index];
 
         return raywork;
     }

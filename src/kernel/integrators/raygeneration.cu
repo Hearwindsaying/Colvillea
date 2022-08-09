@@ -50,18 +50,20 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
         outputBuffer[jobId] = vec4f{0.f, 0.f, 0.f, 1.0f};
     }
 
-
     const int pixelIndex = jobId;
     vec2ui    pixelPosi  = pixelIndexToPixelPos(pixelIndex, width);
 
+    // Initialize sampler seed.
+    vec4ui samplerSeed = Sampler::initSamplerSeed(pixelIndexToPixelPos(pixelIndex, width), iterationIndex);
+
     // A simple perspective camera.
-    const vec2f screen = (vec2f{pixelPosi} + vec2f{.5f, .5f}) / vec2f(width, height);
+    const vec2f screen = (vec2f{pixelPosi} + Sampler::next2D(samplerSeed)) / vec2f(width, height);
 
     Ray ray;
     ray.o = make_float3(camera_pos);
     ray.d = make_float3(normalize(camera_d00 + screen.u * camera_ddu + screen.v * camera_ddv));
 
-    rayworkBuff.setVar(jobId, RayWork{ray, pixelIndex});
+    rayworkBuff.setVar(jobId, RayWork{ray, pixelIndex, samplerSeed});
 }
 
 __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQueue,
@@ -145,7 +147,7 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
         {
             bool  enableMIS = false;
             float bsdfPdf   = enableMIS ? bsdf.pdf(bsdfSamplingRecord) : 0.0f;
-            float weight    = MISWeightBalanced(dRec.pdf / numEmitters /* Brute force sampling. TODO: Remove this and add to sampler. */, bsdfPdf);
+            float weight    = MISWeightBalanced(dRec.pdf/* / numEmitters*/ /* Brute force sampling. TODO: Remove this and add to sampler. */, bsdfPdf);
 
             Li += bsdfVal * Frame::cosTheta(bsdfSamplingRecord.wiLocal) * weight / dRec.pdf;
 

@@ -91,6 +91,7 @@ struct LaunchParams
     float3* d{nullptr};
     float*  maxt{nullptr};
     int*    pixelIndex{nullptr};
+    vec4ui* randSeed{nullptr};
 
     /// Geometry entities in the scene.
     /// OptiXGetInstanceId() could retrieve the entity of current instance.
