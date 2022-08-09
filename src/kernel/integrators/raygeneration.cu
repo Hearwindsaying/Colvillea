@@ -54,7 +54,7 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
     vec2ui    pixelPosi  = pixelIndexToPixelPos(pixelIndex, width);
 
     // Initialize sampler seed.
-    vec4ui samplerSeed = Sampler::initSamplerSeed(pixelIndexToPixelPos(pixelIndex, width), iterationIndex);
+    vec4ui samplerSeed = Sampler::initSamplerSeed(pixelPosi, iterationIndex);
 
     // A simple perspective camera.
     const vec2f screen = (vec2f{pixelPosi} + Sampler::next2D(samplerSeed)) / vec2f(width, height);

@@ -23,12 +23,11 @@ WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, u
     m_queueCapacity{static_cast<uint32_t>(width * height)},
     m_evalMaterialsWorkQueueBuff{m_queueCapacity},
     m_rayEscapedWorkQueueBuff{m_queueCapacity},
-    m_evalShadowRayWorkQueueBuff{m_queueCapacity} /*,
-    m_outputBuff{width * height * sizeof(uint32_t)}*/
+    m_evalShadowRayWorkQueueBuff{m_queueCapacity}
 {
-    std::unique_ptr<Device> pDevice     = Device::createDevice(DeviceType::OptiXDevice);
-    std::unique_ptr<Device> pCUDADevice = Device::createDevice(DeviceType::CUDADevice);
-    this->m_optixDevice.reset(static_cast<OptiXDevice*>(pDevice.release()));
+    std::unique_ptr<Device> pOptiXDevice = Device::createDevice(DeviceType::OptiXDevice);
+    std::unique_ptr<Device> pCUDADevice  = Device::createDevice(DeviceType::CUDADevice);
+    this->m_optixDevice.reset(static_cast<OptiXDevice*>(pOptiXDevice.release()));
     this->m_cudaDevice.reset(static_cast<CUDADevice*>(pCUDADevice.release()));
 
     // Init rays buffer.
@@ -36,7 +35,7 @@ WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, u
     this->m_rayworkBuff = std::make_unique<DeviceBuffer>(width * height * kernel::SOAProxy<kernel::RayWork>::StructureSize);
 
     // RGBA32F.
-    this->m_outputBuff  = std::make_unique<DeviceBuffer>(width * height * sizeof(kernel::vec4f));
+    this->m_outputBuff = std::make_unique<DeviceBuffer>(width * height * sizeof(kernel::vec4f));
 }
 WavefrontPathTracingIntegrator::~WavefrontPathTracingIntegrator()
 {

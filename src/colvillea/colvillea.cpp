@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
         pSceneViewer->addEntity(pEntity);
     }
     
-    std::shared_ptr<core::Emitter> directionalEmitter = core::Emitter::createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 850.f);
+    std::shared_ptr<core::Emitter> directionalEmitter = core::Emitter::createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
     pSceneViewer->addEmitter(directionalEmitter);
 
     /*pRenderEngine->startRendering();
