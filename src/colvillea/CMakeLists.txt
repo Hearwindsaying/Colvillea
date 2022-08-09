@@ -22,6 +22,7 @@ PRIVATE
     imgui-docking
     owl::owl
     glfw
+    glad
     OpenGL::GL
 
 PRIVATE

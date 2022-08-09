@@ -26,6 +26,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <glad/glad.h>
+
 // eventually to go into 'apps/'
 //#define STB_IMAGE_WRITE_IMPLEMENTATION 1
 //#include "stb/stb_image_write.h"
