@@ -62,6 +62,8 @@ public:
     
     virtual std::pair<uint32_t, uint32_t> getFilmSize() = 0;
 
+    virtual void resetIterationIndex() = 0;
+
     /// TODOs: delete this.
     virtual void updateCamera(const Camera& camera) = 0;
 

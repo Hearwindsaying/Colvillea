@@ -52,7 +52,16 @@ public:
 
     virtual void updateCamera(const Camera& camera) override
     {
-        this->m_camera = camera;
+        if (this->m_camera != camera)
+        {
+            this->m_camera = camera;
+            this->resetIterationIndex();
+        }
+    }
+
+    virtual void resetIterationIndex() override
+    {
+        this->m_iterationIndex = 0;
     }
 
 protected:

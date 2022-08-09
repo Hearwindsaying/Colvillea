@@ -230,7 +230,7 @@ void OptiXDevice::bindEntitiesBuffer(const kernel::Entity* entitiesDevicePtr)
 }
 
 void OptiXDevice::launchTraceShadowRayKernel(size_t                                            nItems,
-                                             uint32_t*                                         outputBufferDevPtr,
+                                             kernel::vec4f*                                    outputBufferDevPtr,
                                              kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr)
 {
     spdlog::info("OptiX Device launching tracing shadow rays kernel.");

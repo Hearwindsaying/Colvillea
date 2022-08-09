@@ -107,7 +107,7 @@ struct LaunchParams
     /************************************************************************/
     SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkQueue{nullptr};
 
-    uint32_t* outputBuffer{nullptr};
+    vec4f* outputBuffer{nullptr};
 };
 
 } // namespace kernel

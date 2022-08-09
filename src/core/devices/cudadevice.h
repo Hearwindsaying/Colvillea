@@ -31,19 +31,19 @@ public:
      * \brief
      *    Launch generate primary camera rays kernel.
      */
-    void launchGenerateCameraRaysKernel(kernel::SOAProxy<kernel::RayWork> rayworkBuff, int nItems, uint32_t width, uint32_t height, kernel::vec3f camera_pos, kernel::vec3f camera_d00, kernel::vec3f camera_ddu, kernel::vec3f camera_ddv, uint32_t* outputBuffer)
+    void launchGenerateCameraRaysKernel(kernel::SOAProxy<kernel::RayWork> rayworkBuff, int nItems, uint32_t width, uint32_t height, kernel::vec3f camera_pos, kernel::vec3f camera_d00, kernel::vec3f camera_ddu, kernel::vec3f camera_ddv, kernel::vec4f* outputBuffer, uint32_t iterationIndex)
     {
-        this->launchKernelSync(&kernel::generateCameraRays, nItems, rayworkBuff, nItems, width, height, camera_pos, camera_d00, camera_ddu, camera_ddv, outputBuffer);
+        this->launchKernelSync(&kernel::generateCameraRays, nItems, rayworkBuff, nItems, width, height, camera_pos, camera_d00, camera_ddu, camera_ddv, outputBuffer, iterationIndex);
     }
 
     /**
      * \brief
      *    Launch evaluate escaped rays kernel.
      */
-    void launchEvaluateEscapedRaysKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>* escapedRayQueue, int nItems, uint32_t* outputBuffer, uint32_t width, uint32_t height)
+    void launchEvaluateEscapedRaysKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>* escapedRayQueue, int nItems, kernel::vec4f* outputBuffer, uint32_t width, uint32_t height, uint32_t iterationIndex)
     {
         assert(escapedRayQueue != nullptr && outputBuffer != nullptr);
-        this->launchKernelSync(&kernel::evaluateEscapedRays, nItems, escapedRayQueue, outputBuffer, width, height);
+        this->launchKernelSync(&kernel::evaluateEscapedRays, nItems, escapedRayQueue, outputBuffer, width, height, iterationIndex);
     }
 
     /**

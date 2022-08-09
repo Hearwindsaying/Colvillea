@@ -17,10 +17,12 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
                                    vec3f             camera_d00,
                                    vec3f             camera_ddu,
                                    vec3f             camera_ddv,
-                                   uint32_t*         outputBuffer);
+                                   vec4f*            outputBuffer,
+                                   uint32_t          iterationIndex);
 
 __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQueue,
-                                    uint32_t*                      outputBuffer,
+                                    vec4f*                         outputBuffer,
+                                    uint32_t                       iterationIndex,
                                     uint32_t                       width,
                                     uint32_t                       height);
 

@@ -208,8 +208,8 @@ void CLViewer::resize(const vec2i& newSize)
 
     // After unregistration, we could safely resize GL texture.
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, this->fbTexture));
-    GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newSize.x, newSize.y, 0, GL_RGBA,
-                          GL_UNSIGNED_BYTE, nullptr));
+    GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, newSize.x, newSize.y, 0, GL_RGBA,
+                          GL_FLOAT, nullptr));
 
     // Finally register cuda with GLTexture.
     this->m_pRenderEngine->registerFramebuffer(this->fbTexture);

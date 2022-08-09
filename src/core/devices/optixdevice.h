@@ -57,7 +57,7 @@ public:
     void launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width);
 
     void launchTraceShadowRayKernel(size_t                                            nItems,
-                                    uint32_t*                                         outputBufferDevPtr,
+                                    kernel::vec4f*                                    outputBufferDevPtr,
                                     kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr);
 
 private:

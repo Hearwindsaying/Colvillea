@@ -185,7 +185,10 @@ OPTIX_MISS_PROGRAM(shadowRay)
     //printf("evalShadowRayWork.Lo %f %f %f\n", evalShadowRayWork.Lo.x, evalShadowRayWork.Lo.y, evalShadowRayWork.Lo.z);
 
     // Shadow ray is not blocked so we could safely write radiance to output buffer.
-    optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex] = owl::make_rgba(evalShadowRayWork.Lo * 100.0f);
+
+    vec3f currRadiance = evalShadowRayWork.Lo;
+    vec3f prevRadiance{optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex]};
+    optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex] = accumulate_unbiased(currRadiance, prevRadiance, optixLaunchParams.iterationIndex);
 }
 
 } // namespace kernel

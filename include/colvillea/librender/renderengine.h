@@ -44,6 +44,7 @@ public:
     void resize(uint32_t width, uint32_t height)
     {
         this->m_integrator->resize(width, height);
+        this->m_integrator->resetIterationIndex();
     }
 
     std::pair<uint32_t, uint32_t> getFilmSize() const noexcept

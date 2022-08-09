@@ -37,14 +37,18 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
                                    vec3f             camera_d00,
                                    vec3f             camera_ddu,
                                    vec3f             camera_ddv,
-                                   uint32_t         *outputBuffer)
+                                   vec4f*            outputBuffer,
+                                   uint32_t          iterationIndex)
 {
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
     if (jobId >= nItems)
         return;
 
-    // Reset output buffer by the way.
-    outputBuffer[jobId] = 0;
+    // Reset output buffer.
+    if (iterationIndex == 0)
+    {
+        outputBuffer[jobId] = vec4f{0.f, 0.f, 0.f, 1.0f};
+    }
 
 
     const int pixelIndex = jobId;
@@ -60,7 +64,11 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
     rayworkBuff.setVar(jobId, RayWork{ray, pixelIndex});
 }
 
-__global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQueue, uint32_t* outputBuffer, uint32_t width, uint32_t height)
+__global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQueue,
+                                    vec4f*                         outputBuffer,
+                                    uint32_t                       iterationIndex,
+                                    uint32_t                       width,
+                                    uint32_t                       height)
 {
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
     /*printf("Evaluate escaped rays jobId:%d queueSize:%d\n", jobId, escapedRayQueue->size());*/
@@ -74,7 +82,9 @@ __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQue
 
     vec3f color0{.8f, 0.f, 0.f};
     vec3f color1{.8f, .8f, .8f};
-    outputBuffer[escapedRayWork.pixelIndex] = owl::make_rgba((pattern & 1) ? color1 : color0);
+    vec3f currRadiance = (pattern & 1) ? color1 : color0;
+    vec3f prevRadiance{outputBuffer[escapedRayWork.pixelIndex]};
+    outputBuffer[escapedRayWork.pixelIndex] = accumulate_unbiased(currRadiance, prevRadiance, iterationIndex);
 }
 
 __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,

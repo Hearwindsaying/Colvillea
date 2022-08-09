@@ -40,6 +40,7 @@ void RenderEngine::compileMaterials()
     if (MaterialsCompileSource)
     {
         this->m_integrator->buildMaterials(*MaterialsCompileSource);
+        this->m_integrator->resetIterationIndex();
     }
 }
 
@@ -55,6 +56,7 @@ void RenderEngine::compileAccelStructs()
     {
         sceneHasChanged = true;
         this->m_integrator->buildBLAS(*BLASBuildDataSource);
+        this->m_integrator->resetIterationIndex();
     }
 
     // 2. We may also remove some meshes or changing transformations so we need to check
@@ -65,6 +67,7 @@ void RenderEngine::compileAccelStructs()
         sceneHasChanged = true;
         this->m_integrator->buildTLAS((*TLASBuildDataSourceAndInstanceIDs).first, 
                                       (*TLASBuildDataSourceAndInstanceIDs).second);
+        this->m_integrator->resetIterationIndex();
     }
 
     
@@ -76,6 +79,7 @@ void RenderEngine::compileEntities()
     if (entitiesCompileSource)
     {
         this->m_integrator->buildGeometryEntities(*entitiesCompileSource);
+        this->m_integrator->resetIterationIndex();
     }
 
 }
@@ -86,6 +90,7 @@ void RenderEngine::compileEmitters()
     if (emittersCompileSource)
     {
         this->m_integrator->buildEmitters(*emittersCompileSource);
+        this->m_integrator->resetIterationIndex();
     }
 }
 

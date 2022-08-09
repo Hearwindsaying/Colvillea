@@ -51,5 +51,13 @@ CL_CPU_GPU CL_INLINE float length(const vec2f& x)
 {
     return owl::common::polymorphic::sqrt(owl::dot(x, x));
 }
+
+CL_CPU_GPU CL_INLINE vec4f accumulate_unbiased(const vec3f& currRadiance, const vec3f& prevRadiance, uint32_t N)
+{
+    return vec4f{(static_cast<float>(N) * prevRadiance + currRadiance) / (N + 1), 1.0f};
+    /*return N == 0 ? vec4f{currRadiance, 1.0f} :
+                    vec4f{(1.0f - currRadiance) * prevRadiance + currRadiance / (1.0f + N), 1.0f};*/
+}
+
 } // namespace kernel
 } // namespace colvillea

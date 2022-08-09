@@ -34,7 +34,9 @@ WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, u
     // Init rays buffer.
     // TODO: Change sizeof(kernel::Ray) to helper traits.
     this->m_rayworkBuff = std::make_unique<DeviceBuffer>(width * height * kernel::SOAProxy<kernel::RayWork>::StructureSize);
-    this->m_outputBuff  = std::make_unique<DeviceBuffer>(width * height * sizeof(uint32_t));
+
+    // RGBA32F.
+    this->m_outputBuff  = std::make_unique<DeviceBuffer>(width * height * sizeof(kernel::vec4f));
 }
 WavefrontPathTracingIntegrator::~WavefrontPathTracingIntegrator()
 {
@@ -86,7 +88,8 @@ void WavefrontPathTracingIntegrator::render()
                                                        this->m_camera.m_camera_d00,
                                                        this->m_camera.m_camera_ddu,
                                                        this->m_camera.m_camera_ddv,
-                                                       this->m_outputBuff->getDevicePtrAs<uint32_t*>());
+                                                       this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                       this->m_iterationIndex);
 
     /************************************************************************/
     /*                 Direct Lighting Integration Kernels                  */
@@ -104,7 +107,8 @@ void WavefrontPathTracingIntegrator::render()
     // Handling missed rays.
     this->m_cudaDevice->launchEvaluateEscapedRaysKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
                                                         this->m_queueCapacity,
-                                                        this->m_outputBuff->getDevicePtrAs<uint32_t*>(),
+                                                        this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                        this->m_iterationIndex,
                                                         this->m_width,
                                                         this->m_height);
 
@@ -117,7 +121,7 @@ void WavefrontPathTracingIntegrator::render()
 
     // Trace shadow rays.
     this->m_optixDevice->launchTraceShadowRayKernel(this->m_queueCapacity,
-                                                    this->m_outputBuff->getDevicePtrAs<uint32_t*>(),
+                                                    this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
                                                     this->m_evalShadowRayWorkQueueBuff.getDevicePtr());
 
     // Reset Queues.
@@ -146,7 +150,7 @@ void WavefrontPathTracingIntegrator::resize(uint32_t width, uint32_t height)
 
     // Resize framebuffer.
     //this->m_outputBuff = ManagedDeviceBuffer{width * height * sizeof(uint32_t)};
-    this->m_outputBuff = std::make_unique<DeviceBuffer>(width * height * sizeof(uint32_t));
+    this->m_outputBuff = std::make_unique<DeviceBuffer>(width * height * sizeof(kernel::vec4f));
 
     // Resize buffers.
     this->m_queueCapacity              = width * height;
@@ -170,8 +174,8 @@ void WavefrontPathTracingIntegrator::registerFramebuffer(unsigned int glTexture)
 void WavefrontPathTracingIntegrator::mapFramebuffer()
 {
     this->m_interopOutputTexBuff.upload(this->m_outputBuff->getDevicePtr(),
-                                        this->m_width * sizeof(uint32_t),
-                                        this->m_width * sizeof(uint32_t),
+                                        this->m_width * sizeof(kernel::vec4f),
+                                        this->m_width * sizeof(kernel::vec4f),
                                         this->m_height);
 }
 
