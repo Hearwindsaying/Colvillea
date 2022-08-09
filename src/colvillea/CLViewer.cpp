@@ -14,6 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+/// Include GLAD header first and prevent GLFW including gl headers.
+#define GLFW_INCLUDE_NONE
+#include <glad/glad.h>
+
 #include "CLViewer.h"
 #include "Camera.h"
 #include "InspectMode.h"
@@ -25,8 +29,6 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-
-#include <glad/glad.h>
 
 // eventually to go into 'apps/'
 //#define STB_IMAGE_WRITE_IMPLEMENTATION 1
@@ -378,6 +380,14 @@ CLViewer::CLViewer(std::unique_ptr<core::RenderEngine> pRenderEngine,
     glfwSetWindowUserPointer(handle, this);
     glfwMakeContextCurrent(handle);
     glfwSwapInterval((enableVsync) ? 1 : 0);
+
+    // init GLAD after make glfw context current.
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        spdlog::critical("Failed to initialize OpenGL GLAD!");
+    }
+
+    spdlog::info("OpenGL version from GLAD: {}.{}\n", GLVersion.major, GLVersion.minor);
 
     // Initialize ImGui.
     // Setup Dear ImGui context
