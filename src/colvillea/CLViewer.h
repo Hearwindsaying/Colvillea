@@ -125,10 +125,6 @@ struct CLViewer
     ButtonState centerButton;
     vec2i       lastMousePosition{-1, -1};
 
-    /*! this gets called when the window determines that the mouse
-        got _moved_ to the given position */
-    virtual void mouseMotion(const vec2i& newMousePosition);
-
     /*! mouse got dragged with left button pressedn, by 'delta'
           pixels, at last position where */
     virtual void mouseDragLeft(const vec2i& where, const vec2i& delta);
@@ -155,6 +151,8 @@ struct CLViewer
     /*! this gets called when the user presses a 'special' key on
           the keyboard (cursor keys) ... */
     virtual void special(int key, int mods, const vec2i& /*where*/);
+
+    void handleInputs();
 
     /*! set a new window aspect ratio for the camera, update the
         camera, and notify the app */
@@ -256,7 +254,6 @@ protected:
 
     /*! the glfw window handle */
     GLFWwindow* handle{nullptr};
-    vec2i       lastMousePos = {-1, -1};
 
     std::unique_ptr<core::RenderEngine> m_pRenderEngine;
     core::Camera                        m_camera;

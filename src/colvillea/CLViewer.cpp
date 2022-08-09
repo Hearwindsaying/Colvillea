@@ -278,22 +278,6 @@ void CLViewer::enableFlyMode()
     cameraManipulator  = flyModeManipulator;
 }
 
-/*! this gets called when the window determines that the mouse got
-      _moved_ to the given position */
-void CLViewer::mouseMotion(const vec2i& newMousePosition)
-{
-    if (lastMousePosition != vec2i(-1))
-    {
-        if (leftButton.isPressed)
-            mouseDragLeft(newMousePosition, newMousePosition - lastMousePosition);
-        if (centerButton.isPressed)
-            mouseDragCenter(newMousePosition, newMousePosition - lastMousePosition);
-        if (rightButton.isPressed)
-            mouseDragRight(newMousePosition, newMousePosition - lastMousePosition);
-    }
-    lastMousePosition = newMousePosition;
-}
-
 void CLViewer::mouseDragLeft(const vec2i& where, const vec2i& delta)
 {
     if (cameraManipulator) cameraManipulator->mouseDragLeft(where, delta);
@@ -471,53 +455,59 @@ static void glfwindow_key_cb(GLFWwindow* window,
     }
 }
 
-/*! callback for _moving_ the mouse to a new position */
-static void glfwindow_mouseMotion_cb(GLFWwindow* window, double x, double y)
+void CLViewer::handleInputs()
 {
-    CLViewer* gw = static_cast<CLViewer*>(glfwGetWindowUserPointer(window));
-    assert(gw);
-    gw->mouseMotion(vec2i((int)x, (int)y));
-}
+    bool LMPressed  = ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_MouseLeft);
+    bool LMDown     = ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_MouseLeft);
+    bool LMReleased = ImGui::IsKeyReleased(ImGuiKey_::ImGuiKey_MouseLeft);
 
-/*! callback for pressing _or_ releasing a mouse button*/
-static void glfwindow_mouseButton_cb(GLFWwindow* window,
-                                     int         button,
-                                     int         action,
-                                     int         mods)
-{
-    CLViewer* gw = static_cast<CLViewer*>(glfwGetWindowUserPointer(window));
-    assert(gw);
-    gw->mouseButton(button, action, mods);
-}
+    bool RMPressed  = ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_MouseRight);
+    bool RMDown     = ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_MouseRight);
+    bool RMReleased = ImGui::IsKeyReleased(ImGuiKey_::ImGuiKey_MouseRight);
 
-void CLViewer::mouseButton(int button, int action, int mods)
-{
-    const bool pressed = (action == GLFW_PRESS);
-    lastMousePos       = getMousePos();
-    switch (button)
+    bool MMPressed  = ImGui::IsKeyPressed(ImGuiKey_::ImGuiKey_MouseMiddle);
+    bool MMDown     = ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_MouseMiddle);
+    bool MMReleased = ImGui::IsKeyReleased(ImGuiKey_::ImGuiKey_MouseMiddle);
+
+    const ImVec2 mousePositionf   = ImGui::GetMousePos();
+    vec2i        newMousePosition = vec2i(mousePositionf.x, mousePositionf.y);
+
+    if (LMPressed || LMReleased)
     {
-        case GLFW_MOUSE_BUTTON_LEFT:
-            leftButton.isPressed        = pressed;
-            leftButton.shiftWhenPressed = (mods & GLFW_MOD_SHIFT);
-            leftButton.ctrlWhenPressed  = (mods & GLFW_MOD_CONTROL);
-            leftButton.altWhenPressed   = (mods & GLFW_MOD_ALT);
-            mouseButtonLeft(lastMousePos, pressed);
-            break;
-        case GLFW_MOUSE_BUTTON_MIDDLE:
-            centerButton.isPressed        = pressed;
-            centerButton.shiftWhenPressed = (mods & GLFW_MOD_SHIFT);
-            centerButton.ctrlWhenPressed  = (mods & GLFW_MOD_CONTROL);
-            centerButton.altWhenPressed   = (mods & GLFW_MOD_ALT);
-            mouseButtonCenter(lastMousePos, pressed);
-            break;
-        case GLFW_MOUSE_BUTTON_RIGHT:
-            rightButton.isPressed        = pressed;
-            rightButton.shiftWhenPressed = (mods & GLFW_MOD_SHIFT);
-            rightButton.ctrlWhenPressed  = (mods & GLFW_MOD_CONTROL);
-            rightButton.altWhenPressed   = (mods & GLFW_MOD_ALT);
-            mouseButtonRight(lastMousePos, pressed);
-            break;
+        this->mouseButtonLeft(newMousePosition, LMPressed);
     }
+    else if (RMPressed || RMReleased)
+    {
+        this->mouseButtonRight(newMousePosition, RMPressed);
+    }
+    else if (MMPressed || MMReleased)
+    {
+        this->mouseButtonCenter(newMousePosition, RMPressed);
+    }
+
+    if (LMDown)
+    {
+        if (this->lastMousePosition != vec2i(-1))
+        {
+            mouseDragLeft(newMousePosition, newMousePosition - lastMousePosition);
+        }
+    }
+    else if (RMDown)
+    {
+        if (this->lastMousePosition != vec2i(-1))
+        {
+            mouseDragRight(newMousePosition, newMousePosition - lastMousePosition);
+        }
+    }
+    else if (MMDown)
+    {
+        if (this->lastMousePosition != vec2i(-1))
+        {
+            mouseDragCenter(newMousePosition, newMousePosition - lastMousePosition);
+        }
+    }
+
+    this->lastMousePosition = newMousePosition;
 }
 
 void CLViewer::setCameraOptions(float fovy,
@@ -564,10 +554,8 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
     resize(vec2i(width, height));
 
     glfwSetFramebufferSizeCallback(handle, glfwindow_reshape_cb);
-    glfwSetMouseButtonCallback(handle, glfwindow_mouseButton_cb);
     glfwSetKeyCallback(handle, glfwindow_key_cb);
     glfwSetCharCallback(handle, glfwindow_char_cb);
-    glfwSetCursorPosCallback(handle, glfwindow_mouseMotion_cb);
 
     while (!glfwWindowShouldClose(handle) && keepgoing())
     {
@@ -589,15 +577,17 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        this->handleInputs();
+
         {
             static float f       = 0.0f;
             static int   counter = 0;
 
             ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");          // Display some text (you can use a format strings too)
+            ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+            ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
 
             if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
                 counter++;
@@ -622,19 +612,19 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
             }
 
             draw();
-            // 
+            //
             glBindTexture(GL_TEXTURE_2D, fbTexture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
             std::pair<uint32_t, uint32_t> filmSize = this->m_pRenderEngine->getFilmSize();
-            // 
-            ImGui::Image((void*)(intptr_t)this->fbTexture, ImVec2(static_cast<float>(filmSize.first), static_cast<float>(filmSize.second))/*, ImVec2(0, 1), ImVec2(1, 0)*/); /* flip UV Coordinates due to the inconsistence(vertically invert) */
+            //
+            ImGui::Image((void*)(intptr_t)this->fbTexture, ImVec2(static_cast<float>(filmSize.first), static_cast<float>(filmSize.second)), ImVec2(0, 1), ImVec2(1, 0)); /* flip UV Coordinates due to the inconsistence(vertically invert) */
 
             ImGui::End();
         }
 
-        
+
 
         // Rendering
         ImGui::Render();
@@ -660,7 +650,6 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
 
 
         glfwSwapBuffers(handle);
-        
     }
 
     // Cleanup
