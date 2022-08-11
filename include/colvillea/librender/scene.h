@@ -153,10 +153,10 @@ public:
     std::shared_ptr<TriangleMesh> createTriangleMesh(VertsVecType&& verts,
                                                      TrisVecType&&  tris)
     {
-        /*static_assert(std::is_same_v<VertsVecType, const std::vector<vec3f>&> ||
-                      std::is_same_v<VertsVecType, std::vector<vec3f>&&>);
-        static_assert(std::is_same_v<TrisVecType, const std::vector<Triangle>&> ||
-                      std::is_same_v<TrisVecType, std::vector<Triangle>&&>);*/
+        static_assert(std::is_same_v<decltype(verts), const std::vector<vec3f>&> ||
+                      std::is_same_v<decltype(verts), std::vector<vec3f>&&>);
+        static_assert(std::is_same_v<decltype(tris), const std::vector<Triangle>&> ||
+                      std::is_same_v<decltype(tris), std::vector<Triangle>&&>);
 
         std::shared_ptr<TriangleMesh> triMesh = std::make_shared<TriangleMesh>(this, std::forward<VertsVecType>(verts), std::forward<TrisVecType>(tris));
         this->addTriMesh(triMesh);
