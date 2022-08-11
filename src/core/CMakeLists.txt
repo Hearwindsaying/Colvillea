@@ -11,6 +11,7 @@ set(INTERFACE_LIBRENDER
     ${CORE_INCLUDE_DIR}/librender/nodebase/camera.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/material.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/emitter.h
+    ${CORE_INCLUDE_DIR}/librender/nodebase/texture.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/node.h
 )
 
@@ -24,6 +25,10 @@ set(INTERFACE_NODES_MATERIALS
 
 set(INTERFACE_NODES_EMITTERS
     ${CORE_INCLUDE_DIR}/nodes/emitters/directional.h
+)
+
+set(INTERFACE_NODES_TEXTURES
+    ${CORE_INCLUDE_DIR}/nodes/textures/imagetex2d.h
 )
 
 set(INCLUDE_DEVICES
@@ -60,6 +65,7 @@ set(SOURCE_LIBRENDER
     librender/nodebase/shape.cpp
     librender/nodebase/material.cpp
     librender/nodebase/emitter.cpp
+    librender/nodebase/texture.cpp
 )
 
 set(SOURCE_NODES_SHAPES
@@ -75,6 +81,10 @@ set(SOURCE_NODES_EMITTERS
     nodes/emitters/directional.cpp
 )
 
+set(SOURCE_NODES_TEXTURES
+    nodes/textures/imagetex2d.cpp
+)
+
 set_source_files_properties(
     ${SOURCE_DEVICES}
     ${SOURCE_INTEGRATORS}
@@ -82,6 +92,7 @@ set_source_files_properties(
     ${SOURCE_NODES_SHAPES}
     ${SOURCE_NODES_MATERIALS}
     ${SOURCE_NODES_EMITTERS}
+    ${SOURCE_NODES_TEXTURES}
 
     PROPERTIES LANGUAGE CUDA
 )
@@ -193,6 +204,7 @@ STATIC
     ${INTERFACE_NODES_SHAPES}
     ${INTERFACE_NODES_MATERIALS}
     ${INTERFACE_NODES_EMITTERS}
+    ${INTERFACE_NODES_TEXTURES}
     ${INCLUDE_DEVICES}
     ${SOURCE_DEVICES}
     ${INCLUDE_INTEGRATORS}
@@ -201,6 +213,7 @@ STATIC
     ${SOURCE_NODES_SHAPES}
     ${SOURCE_NODES_MATERIALS}
     ${SOURCE_NODES_EMITTERS}
+    ${SOURCE_NODES_TEXTURES}
 )
 
 target_include_directories(colvillea-core
@@ -227,6 +240,7 @@ source_group("interface/librender" FILES ${INTERFACE_LIBRENDER})
 source_group("interface/nodes/shapes" FILES ${INTERFACE_NODES_SHAPES})
 source_group("interface/nodes/materials" FILES ${INTERFACE_NODES_MATERIALS})
 source_group("interface/nodes/emitters" FILES ${INTERFACE_NODES_EMITTERS})
+source_group("interface/nodes/textures" FILES ${INTERFACE_NODES_TEXTURES})
 
 source_group("src/devices" FILES ${SOURCE_DEVICES})
 source_group("src/integrators" FILES ${SOURCE_INTEGRATORS})
@@ -235,6 +249,7 @@ source_group("src/librender" FILES ${SOURCE_LIBRENDER})
 source_group("src/nodes/shapes" FILES ${SOURCE_NODES_SHAPES})
 source_group("src/nodes/materials" FILES ${SOURCE_NODES_MATERIALS})
 source_group("src/nodes/emitters" FILES ${SOURCE_NODES_EMITTERS})
+source_group("src/nodes/textures" FILES ${SOURCE_NODES_TEXTURES})
 
 set_target_properties(colvillea-core PROPERTIES
     FOLDER colvillea

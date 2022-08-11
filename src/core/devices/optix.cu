@@ -142,6 +142,7 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 
     evalMtlsWork.ng = Ng;
     makeFrame(Ng, &evalMtlsWork.dpdu, &evalMtlsWork.dpdv);
+    evalMtlsWork.uv = vec2f{b1, b2};
 
     evalMtlsWork.wo         = optixGetWorldRayDirection();
     evalMtlsWork.wo         = -evalMtlsWork.wo;

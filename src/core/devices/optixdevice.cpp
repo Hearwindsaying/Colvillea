@@ -235,7 +235,7 @@ void OptiXDevice::launchTraceShadowRayKernel(size_t                             
                                              kernel::vec4f*                                    outputBufferDevPtr,
                                              kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr)
 {
-    spdlog::info("OptiX Device launching tracing shadow rays kernel.");
+    //spdlog::info("OptiX Device launching tracing shadow rays kernel.");
 
     owlParamsSet1ul(this->m_launchParams, "outputBuffer", reinterpret_cast<uint64_t>(outputBufferDevPtr));
     owlParamsSet1ul(this->m_launchParams, "evalShadowRayWorkQueue", reinterpret_cast<uint64_t> (evalShadowRayWorkQueueDevPtr));
@@ -251,7 +251,7 @@ void OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationI
     // now that everything is ready: launch it ....
     // ##################################################################
 
-    spdlog::info("OptiX Device launching tracing primary rays kernel with iteration {}, framebuffer width {}.", iterationIndex, width);
+    //spdlog::info("OptiX Device launching tracing primary rays kernel with iteration {}, framebuffer width {}.", iterationIndex, width);
 
     owlParamsSet1ui(this->m_launchParams, "iterationIndex", iterationIndex);
     owlParamsSet1ui(this->m_launchParams, "width", width);

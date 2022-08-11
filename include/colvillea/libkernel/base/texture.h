@@ -7,20 +7,66 @@
 #include "device_launch_parameters.h"
 #include <texture_types.h>
 
+#include <libkernel/textures/imagetex2d.h>
+
 namespace colvillea
 {
 namespace kernel
 {
-class Texture
+
+
+/**
+ * \brief
+ *    Texture type enum. 
+ */
+enum class TextureType : uint32_t
 {
+    /// 2D Image Texture.
+    ImageTexture2D,
+
+    /// Unknown texture type.
+    Unknown
 };
 
-
-class Texture2D : public Texture
+class Texture final
 {
+public:
+    CL_CPU_GPU CL_INLINE Texture() :
+        m_textureTag{TextureType::Unknown} {}
+
+    CL_CPU_GPU CL_INLINE Texture(const ImageTexture2D& texture) :
+        m_textureTag{TextureType::ImageTexture2D}, m_imagetex2D {texture}
+    {}
+
+    CL_CPU_GPU TextureType getTextureType() const
+    {
+        return this->m_textureTag;
+    }
+
+#ifdef __CUDACC__
+    CL_GPU vec4f eval2D(const vec2f& uv) const
+    {
+        switch (this->m_textureTag)
+        {
+            case TextureType::ImageTexture2D:
+                return this->m_imagetex2D.eval2D(uv);
+            default:
+                assert(false);
+                return {};
+        }
+    }
+#endif
 
 private:
-    cudaTextureObject_t m_texObj{0};
+    /// Tagged Union implementation.
+    TextureType m_textureTag{TextureType::Unknown};
+    union
+    {
+        ImageTexture2D m_imagetex2D;
+    };
 };
+
+
+
 } // namespace kernel
 } // namespace colvillea

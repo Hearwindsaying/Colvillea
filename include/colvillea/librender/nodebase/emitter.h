@@ -19,9 +19,8 @@ using vec3ui = owl::common::vec3ui;
 class Emitter : public Node
 {
 public:
-    static std::unique_ptr<Emitter> createEmitter(kernel::EmitterType type, const vec3f& colorMulIntensity, const vec3f& sunDirection, const float sunAngularRadius);
-
-    Emitter(kernel::EmitterType type) :
+    Emitter(Scene* pScene, kernel::EmitterType type) :
+        Node{pScene},
         m_emitterType{type} {}
 
     kernel::EmitterType getEmitterType() const noexcept

@@ -33,24 +33,21 @@ int main(int argc, char* argv[])
     std::shared_ptr<core::Scene>        pScene        = core::Scene::createScene();
     core::Scene*                        pSceneViewer  = pScene.get();
     std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(ptIntegrator, pScene);
-    
-    
+
+
     /*pScene->addTriangleMeshes(std::move(objMeshes));
     pScene->addTriangleMesh(std::move(cubeMesh));*/
 
-    auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
+    auto objMeshes = delegate::MeshImporter::loadMeshes(pSceneViewer, dir / "leftrightplane.obj");
     //std::shared_ptr<core::TriangleMesh> cubeMesh = delegate::MeshImporter::loadDefaultCube();
-    std::shared_ptr<core::Material>
-        pMaterial = core::Material::createMaterial(core::MaterialType::Diffuse, vec3f{1.0f});
+    std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMaterial(core::MaterialType::Diffuse, vec3f{1.0f});
 
     for (const auto& triMesh : objMeshes)
     {
-        std::shared_ptr<core::Entity> pEntity = std::make_shared<core::Entity>(pMaterial, triMesh);
-        pSceneViewer->addEntity(pEntity);
+        pSceneViewer->createEntity(triMesh, pMaterial);
     }
-    
-    std::shared_ptr<core::Emitter> directionalEmitter = core::Emitter::createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
-    pSceneViewer->addEmitter(directionalEmitter);
+
+    pSceneViewer->createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
 
     /*pRenderEngine->startRendering();
     pRenderEngine->endRendering();*/

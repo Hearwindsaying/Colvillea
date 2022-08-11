@@ -37,6 +37,10 @@ set(INTERFACE_EMITTERS
     ${KERNEL_INCLUDE_DIR}/libkernel/emitters/directional.h
 )
 
+set(INTERFACE_TEXTURES
+    ${KERNEL_INCLUDE_DIR}/libkernel/textures/imagetex2d.h
+)
+
 
 set_source_files_properties(
     ${INTERFACE_INTEGRATORS}
@@ -60,6 +64,10 @@ set(SOURCE_MATERIALS
     materials/diffusemtl.cpp
 )
 
+set(SOURCE_TEXTURES
+    textures/imagetex2d.cpp
+)
+
 add_library(colvillea-kernel 
 STATIC 
     ${INTERFACE_BASE} 
@@ -68,10 +76,22 @@ STATIC
     ${INTERFACE_SHAPES}
     ${INTERFACE_MATERIALS}
     ${INTERFACE_EMITTERS}
+    ${INTERFACE_TEXTURES}
     ${SOURCE_INTEGRATORS}
     ${SOURCE_BASE}
     ${SOURCE_BSDFS}
     ${SOURCE_MATERIALS}
+    ${SOURCE_TEXTURES}
+)
+
+set_source_files_properties(
+    ${SOURCE_INTEGRATORS}
+    ${SOURCE_BASE}
+    ${SOURCE_BSDFS}
+    ${SOURCE_MATERIALS}
+    ${SOURCE_TEXTURES}
+
+    PROPERTIES LANGUAGE CUDA
 )
 
 set_target_properties(colvillea-kernel PROPERTIES LINKER_LANGUAGE CXX)
@@ -96,10 +116,12 @@ source_group("interface/bsdfs" FILES ${INTERFACE_BSDFS})
 source_group("interface/shapes" FILES ${INTERFACE_SHAPES})
 source_group("interface/materials" FILES ${INTERFACE_MATERIALS})
 source_group("interface/emitters" FILES ${INTERFACE_EMITTERS})
+source_group("interface/textures" FILES ${INTERFACE_TEXTURES})
 source_group("source/integrators" FILES ${SOURCE_INTEGRATORS})
 source_group("source/base" FILES ${SOURCE_BASE})
 source_group("source/bsdfs" FILES ${SOURCE_BSDFS})
 source_group("source/materials" FILES ${SOURCE_MATERIALS})
+source_group("source/textures" FILES ${SOURCE_TEXTURES})
 
 set_target_properties(colvillea-kernel PROPERTIES
     FOLDER colvillea

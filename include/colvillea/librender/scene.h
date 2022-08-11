@@ -3,13 +3,16 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <type_traits>
 
 #include <librender/nodebase/camera.h>
 #include <librender/nodebase/emitter.h>
+#include <librender/nodebase/texture.h>
 #include <librender/nodebase/material.h>
 #include <librender/entity.h>
 #include <libkernel/base/entity.h>
 #include <libkernel/base/material.h>
+#include <libkernel/base/texture.h>
 
 
 namespace colvillea
@@ -47,6 +50,10 @@ public:
         EmitterAdded   = 1 << 10,
         EmitterRemoved = 1 << 11,
 
+        TexturesEdited  = 1 << 12,
+        TexturesAdded   = 1 << 13,
+        TexturesRemoved = 1 << 14,
+
         /// Any shape modification event occurred.
         AnyShapeModification = ShapeEdited | ShapeAdded | ShapeRemoved,
 
@@ -56,7 +63,11 @@ public:
         /// Any entity modification event occurred.
         AnyEntityModification = EntityEdited | EntityAdded | EntityRemoved,
 
-        AnyEmitterModification = EmitterEdited | EmitterAdded | EmitterRemoved
+        /// Any emitter modification event occurred.
+        AnyEmitterModification = EmitterEdited | EmitterAdded | EmitterRemoved,
+
+        /// Any texture modification event occurred.
+        AnyTextureModification = TexturesEdited | TexturesAdded | TexturesRemoved
     };
 
     SceneEditAction() = default;
@@ -83,51 +94,91 @@ private:
 class Scene
 {
 public:
+    /**
+     * \brief
+     *    Create an empty scene.
+     * 
+     * \return 
+     *    Scene.
+     */
     static std::unique_ptr<Scene> createScene();
 
 public:
     Scene() = default;
 
+public:
+    /************************************************************************/
+    /*                            Scene API                                 */
+    /************************************************************************/
+
     /**
      * \brief
-     *    Add an ready to be rendered entity. Material and shape
-     * of the entity will be search in the scene cache.
+     *    Create an emitter and add to the scene.
      * 
-     * \param entity
+     * \param type
+     * \param colorMulIntensity
+     * \param sunDirection
+     * \param sunAngularRadius
+     * \return 
      */
-    void addEntity(std::shared_ptr<Entity> entity)
+    std::shared_ptr<Emitter> createEmitter(kernel::EmitterType type,
+                                           const vec3f&        colorMulIntensity,
+                                           const vec3f&        sunDirection,
+                                           const float         sunAngularRadius);
+
+    /**
+     * \brief
+     *    Create a texture and add to the scene.
+     * 
+     * \param type
+     * \param image
+     * \return 
+     */
+    std::shared_ptr<Texture> createTexture(kernel::TextureType type,
+                                           const Image&        image);
+
+    /**
+     * \brief
+     *    Create a material and add to the scene.
+     * 
+     * \param type
+     * \param reflectance
+     * \return 
+     */
+    std::shared_ptr<Material> createMaterial(MaterialType type, const vec3f& reflectance);
+
+    std::shared_ptr<Material> createMaterial(MaterialType type, const std::shared_ptr<Texture>& reflectanceTex);
+
+    template <typename VertsVecType, typename TrisVecType>
+    std::shared_ptr<TriangleMesh> createTriangleMesh(VertsVecType&& verts,
+                                                     TrisVecType&&  tris)
     {
-        this->m_entities.push_back(entity);
-        this->m_editActions.addAction(SceneEditAction::EditActionType::EntityAdded);
+        /*static_assert(std::is_same_v<VertsVecType, const std::vector<vec3f>&> ||
+                      std::is_same_v<VertsVecType, std::vector<vec3f>&&>);
+        static_assert(std::is_same_v<TrisVecType, const std::vector<Triangle>&> ||
+                      std::is_same_v<TrisVecType, std::vector<Triangle>&&>);*/
 
-        // Search trimesh in the cache.
-        auto trimeshFoundIter = std::find_if(this->m_trimeshes.cbegin(),
-                                             this->m_trimeshes.cend(),
-                                             [trimeshID = entity->getTrimesh()->getID()](const auto& trimeshPtr) {
-                                                 return trimeshID == trimeshPtr->getID();
-                                             });
+        std::shared_ptr<TriangleMesh> triMesh = std::make_shared<TriangleMesh>(this, std::forward<VertsVecType>(verts), std::forward<TrisVecType>(tris));
+        this->addTriMesh(triMesh);
 
-        // If there is not a valid trimesh entry, add one.
-        if (trimeshFoundIter == this->m_trimeshes.cend())
-        {
-            this->m_trimeshes.push_back(entity->getTrimeshSharing());
-            this->m_editActions.addAction(SceneEditAction::EditActionType::ShapeAdded);
-        }
-
-        // Search material in the cache.
-        auto materialFoundIter = std::find_if(this->m_materials.cbegin(),
-                                              this->m_materials.cend(),
-                                              [materialID = entity->getMaterial()->getID()](const auto& materialPtr) {
-                                                  return materialID == materialPtr->getID();
-                                              });
-
-        if (materialFoundIter == this->m_materials.cend())
-        {
-            this->m_materials.push_back(entity->getMaterialSharing());
-            this->m_editActions.addAction(SceneEditAction::EditActionType::MaterialAdded);
-        }
+        return triMesh;
     }
 
+
+    /**
+     * \brief.
+     *    Create an entity and add to the scene. Currently, there does
+     * not exist the "EntityType" since Entity by itself just reference
+     * shape and material, composing an entity in virtual.
+     * 
+     * \param shape
+     * \param material
+     * \return 
+     */
+    std::shared_ptr<Entity> createEntity(const std::shared_ptr<TriangleMesh>& shape,
+                                         const std::shared_ptr<Material>&     material);
+
+private:
     /**
      * \brief
      *    Add an emitter to the scene. Duplicated emitter (same ID)
@@ -137,7 +188,7 @@ public:
      */
     void addEmitter(std::shared_ptr<Emitter> emitter)
     {
-        // Search trimesh in the cache.
+        // Search emitter in the cache.
         auto emitterFoundIter = std::find_if(this->m_emitters.cbegin(),
                                              this->m_emitters.cend(),
                                              [emitterID = emitter->getID()](const auto& emitterPtr) {
@@ -150,6 +201,96 @@ public:
         this->m_editActions.addAction(SceneEditAction::EditActionType::EmitterAdded);
     }
 
+    /**
+     * \brief
+     *    Add an texture to the scene. Duplicated texture (same ID)
+     * will emit an assertion failure.
+     * 
+     * \param texture
+     */
+    void addTexture(std::shared_ptr<Texture> texture)
+    {
+        // Search texture in the cache.
+        auto foundIter = std::find_if(this->m_textures.cbegin(),
+                                      this->m_textures.cend(),
+                                      [textureID = texture->getID()](const auto& texturePtr) {
+                                          return textureID == texturePtr->getID();
+                                      });
+        assert(foundIter == this->m_textures.cend());
+
+        this->m_textures.push_back(texture);
+        // TODO: Review action type management.
+        this->m_editActions.addAction(SceneEditAction::EditActionType::TexturesAdded);
+    }
+
+    /**
+     * \brief
+     *    Add a material to the scene. Duplicated material (same ID)
+     * will emit an assertion failure.
+     * 
+     * \param material
+     */
+    void addMaterial(std::shared_ptr<Material> material)
+    {
+        // Search texture in the cache.
+        auto foundIter = std::find_if(this->m_materials.cbegin(),
+                                      this->m_materials.cend(),
+                                      [materialID = material->getID()](const auto& materialPtr) {
+                                          return materialID == materialPtr->getID();
+                                      });
+        assert(foundIter == this->m_materials.cend());
+
+        this->m_materials.push_back(material);
+        // TODO: Review action type management.
+        this->m_editActions.addAction(SceneEditAction::EditActionType::MaterialAdded);
+    }
+
+    /**
+     * \brief
+     *    Add a trimesh to the scene. Duplicated trimesh (same ID)
+     * will emit an assertion failure.
+     * 
+     * \param trimesh
+     */
+    void addTriMesh(std::shared_ptr<TriangleMesh> trimesh)
+    {
+        // Search trimesh in the cache.
+        auto foundIter = std::find_if(this->m_trimeshes.cbegin(),
+                                      this->m_trimeshes.cend(),
+                                      [trimeshID = trimesh->getID()](const auto& trimeshPtr) {
+                                          return trimeshID == trimeshPtr->getID();
+                                      });
+        assert(foundIter == this->m_trimeshes.cend());
+
+        this->m_trimeshes.push_back(trimesh);
+        // TODO: Review action type management.
+        this->m_editActions.addAction(SceneEditAction::EditActionType::ShapeAdded);
+    }
+
+
+    /**
+     * \brief
+     *    Add an ready to be rendered entity. Material and shape
+     * of the entity will be search in the scene cache.
+     * 
+     * \param entity
+     */
+    void addEntity(std::shared_ptr<Entity> entity)
+    {
+        // Search entity in the cache.
+        auto foundIter = std::find_if(this->m_entities.cbegin(),
+                                      this->m_entities.cend(),
+                                      [entityID = entity->getID()](const auto& entityPtr) {
+                                          return entityID == entityPtr->getID();
+                                      });
+        assert(foundIter == this->m_entities.cend());
+
+        this->m_entities.push_back(entity);
+        // TODO: Review action type management.
+        this->m_editActions.addAction(SceneEditAction::EditActionType::EntityAdded);
+    }
+
+public:
     /// Collect dirty TriMeshes that need to be built acceleration structures.
     /// Note that we return a vector of viewing pointers to TriangleMesh instead
     /// of sharing ownership -- we consider TriMeshes data is exclusively owned
@@ -165,7 +306,7 @@ public:
                             std::vector<uint32_t>>>
     collectTriangleMeshForTLASBuilding() const;
 
-    /// Compile Scene entities to the kernel-ready form. This is to be used 
+    /// Compile Scene entities to the kernel-ready form. This is to be used
     /// by RenderEngine.
     std::optional<std::vector<kernel::Entity>> compileEntity() const;
 
@@ -190,6 +331,10 @@ private:
     /// Materials aggregate. It should not contain redundant data that
     /// is not going to be rendered.
     std::vector<std::shared_ptr<Material>> m_materials;
+
+    /// Textures aggregate. It should not contain redundant data that
+    /// is not going to be rendered.
+    std::vector<std::shared_ptr<Texture>> m_textures;
 
     /// Entities aggregate. We assume that entities should always be
     /// renderered.

@@ -1,6 +1,7 @@
 #include <delegate/meshimporter.h>
 
 #include <nodes/shapes/trianglemesh.h>
+#include <librender/scene.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -10,8 +11,9 @@ namespace colvillea
 {
 namespace delegate
 {
-std::unique_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube()
+std::shared_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube(core::Scene* scene)
 {
+    assert(scene != nullptr);
     spdlog::info("Loading a default cube.");
 
     const int NUM_VERTICES = 8;
@@ -30,10 +32,10 @@ std::unique_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube()
     std::vector<core::Triangle> triangles{
         {0, 1, 3}, {2, 3, 0}, {5, 7, 6}, {5, 6, 4}, {0, 4, 5}, {0, 5, 1}, {2, 3, 7}, {2, 7, 6}, {1, 5, 7}, {1, 7, 3}, {4, 0, 2}, {4, 2, 6}};
 
-    return std::make_unique<core::TriangleMesh>(std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles));
+    return scene->createTriangleMesh(std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles));
 }
 
-std::vector<std::shared_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const std::filesystem::path& meshfile)
+std::vector<std::shared_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(core::Scene* coreScene, const std::filesystem::path& meshfile)
 {
     spdlog::info("Loading triangle meshes from {} by assimp.", meshfile.string().c_str());
 
@@ -54,12 +56,12 @@ std::vector<std::shared_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(const 
     std::vector<std::shared_ptr<core::TriangleMesh>> meshes;
 
     // process ASSIMP's root node recursively
-    processNode(meshes, scene->mRootNode, scene);
+    processNode(coreScene, meshes, scene->mRootNode, scene);
 
     return meshes;
 }
 
-void MeshImporter::processNode(std::vector<std::shared_ptr<core::TriangleMesh>>& meshes, aiNode* node, const aiScene* scene)
+void MeshImporter::processNode(core::Scene* coreScene, std::vector<std::shared_ptr<core::TriangleMesh>>& meshes, aiNode* node, const aiScene* scene)
 {
     assert(node != nullptr && scene != nullptr);
 
@@ -69,16 +71,16 @@ void MeshImporter::processNode(std::vector<std::shared_ptr<core::TriangleMesh>>&
         // the node object only contains indices to index the actual objects in the scene.
         // the scene contains all the data, node is just to keep stuff organized (like relations between nodes).
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(processMesh(mesh, scene));
+        meshes.push_back(processMesh(coreScene, mesh, scene));
     }
     // after we've processed all of the meshes (if any) we then recursively process each of the children nodes
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(meshes, node->mChildren[i], scene);
+        processNode(coreScene, meshes, node->mChildren[i], scene);
     }
 }
 
-std::shared_ptr<core::TriangleMesh> MeshImporter::processMesh(aiMesh* mesh, const aiScene* scene)
+std::shared_ptr<core::TriangleMesh> MeshImporter::processMesh(core::Scene* coreScene, aiMesh* mesh, const aiScene* scene)
 {
     assert(mesh != nullptr && scene != nullptr);
 
@@ -103,7 +105,7 @@ std::shared_ptr<core::TriangleMesh> MeshImporter::processMesh(aiMesh* mesh, cons
         triangles.push_back(core::Triangle{face.mIndices[0], face.mIndices[1], face.mIndices[2]});
     }
     // return a mesh object created from the extracted mesh data
-    return std::make_unique<core::TriangleMesh>(std::move(vertices), std::move(triangles));
+    return coreScene->createTriangleMesh(std::move(vertices), std::move(triangles));
 }
 } // namespace delegate
 } // namespace colvillea

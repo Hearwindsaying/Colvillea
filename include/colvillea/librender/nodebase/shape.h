@@ -9,11 +9,11 @@ namespace core
 {
 enum class ShapeType : uint32_t
 {
-    /// Unknown shape type (default value)
-    None = 0,
-
     /// Triangle mesh
-    TriangleMesh
+    TriangleMesh,
+
+    /// Unknown shape type (default value)
+    None
 };
 
 /**
@@ -27,7 +27,8 @@ enum class ShapeType : uint32_t
 class Shape : public Node
 {
 public:
-    Shape(ShapeType type) :
+    Shape(Scene* pScene, ShapeType type) :
+        Node {pScene},
         m_shapeType{type} {}
 
     ShapeType getShapeType() const noexcept

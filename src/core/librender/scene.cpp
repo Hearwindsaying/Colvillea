@@ -3,6 +3,7 @@
 #include <nodes/shapes/trianglemesh.h>
 #include <nodes/materials/diffusemtl.h>
 #include <nodes/emitters/directional.h>
+#include <nodes/textures/imagetex2d.h>
 #include <librender/scene.h>
 
 #include <spdlog/spdlog.h>
@@ -16,6 +17,106 @@ std::unique_ptr<Scene> Scene::createScene()
     return std::make_unique<Scene>();
 }
 
+/************************************************************************/
+/*                 Scene API Implementation Start                       */
+/************************************************************************/
+
+std::shared_ptr<Emitter> Scene::createEmitter(kernel::EmitterType type,
+                                              const vec3f&        colorMulIntensity,
+                                              const vec3f&        sunDirection,
+                                              const float         sunAngularRadius)
+{
+    std::shared_ptr<Emitter> emitter;
+    switch (type)
+    {
+        case kernel::EmitterType::Directional:
+            emitter = std::make_shared<DirectionalEmitter>(this,
+                                                           colorMulIntensity,
+                                                           sunDirection,
+                                                           sunAngularRadius);
+            break;
+        default:
+            spdlog::critical("Unknown emitter type!");
+            assert(false);
+    }
+
+    this->addEmitter(emitter);
+
+    return emitter;
+}
+
+std::shared_ptr<Texture> Scene::createTexture(kernel::TextureType type, const Image& image)
+{
+    std::shared_ptr<Texture> texture;
+    switch (type)
+    {
+        case kernel::TextureType::ImageTexture2D:
+            texture = std::make_shared<ImageTexture2D>(this, image);
+            break;
+        default:
+            spdlog::critical("Unknown texture type.");
+            assert(false);
+    }
+
+    this->addTexture(texture);
+
+    return texture;
+}
+
+std::shared_ptr<Material> Scene::createMaterial(MaterialType type, const vec3f& reflectance)
+{
+    std::shared_ptr<Material> material;
+    switch (type)
+    {
+        case MaterialType::Diffuse:
+            material = std::make_shared<DiffuseMtl>(this, reflectance);
+            break;
+        default:
+            spdlog::critical("Unknown material type.");
+            assert(false);
+    }
+
+    this->addMaterial(material);
+
+    return material;
+}
+
+std::shared_ptr<Material> Scene::createMaterial(MaterialType                    type,
+                                                const std::shared_ptr<Texture>& reflectanceTex)
+{
+    std::shared_ptr<Material> material;
+    switch (type)
+    {
+        case MaterialType::Diffuse:
+            material = std::make_shared<DiffuseMtl>(this, reflectanceTex);
+            break;
+        default:
+            spdlog::critical("Unknown material type.");
+            assert(false);
+    }
+
+    this->addMaterial(material);
+
+    // Note that texture must already be in the texture cache.
+    // No need to invoke addTexture().
+
+    return material;
+}
+
+std::shared_ptr<Entity> Scene::createEntity(const std::shared_ptr<TriangleMesh>& shape, const std::shared_ptr<Material>& material)
+{
+    // There is no entity cache.
+    std::shared_ptr<Entity> entity = std::make_shared<Entity>(this, material, shape);
+
+    this->addEntity(entity);
+
+    return entity;
+}
+
+/************************************************************************/
+/*                   Scene API Implementation End                       */
+/************************************************************************/
+
 std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuilding() const
 {
     // If we added a new shape to the scene, it would have an empty BLAS to be built.
@@ -23,6 +124,9 @@ std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuild
     if (this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeEdited) ||
         this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeAdded))
     {
+        assert(this->m_editActions.hasAction(SceneEditAction::EditActionType::EntityAdded) ||
+               this->m_editActions.hasAction(SceneEditAction::EditActionType::EntityEdited));
+
         std::vector<TriangleMesh*> trimeshes;
 
         // Collect trimesh from trimeshes cache, which contains unique trimesh data.
@@ -36,7 +140,7 @@ std::optional<std::vector<TriangleMesh*>> Scene::collectTriangleMeshForBLASBuild
 
         return std::make_optional(std::move(trimeshes));
     }
-    
+
     return {};
 }
 
@@ -47,6 +151,9 @@ Scene::collectTriangleMeshForTLASBuilding() const
     if (this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeAdded) ||
         this->m_editActions.hasAction(SceneEditAction::EditActionType::ShapeRemoved))
     {
+        assert(this->m_editActions.hasAction(SceneEditAction::EditActionType::EntityAdded) ||
+               this->m_editActions.hasAction(SceneEditAction::EditActionType::EntityRemoved));
+
         std::vector<const TriangleMesh*> dirtyMeshes;
         std::vector<uint32_t>            instanceIDs;
 
@@ -65,7 +172,7 @@ Scene::collectTriangleMeshForTLASBuilding() const
 
         return std::make_optional(std::make_pair(std::move(dirtyMeshes), std::move(instanceIDs)));
     }
-    
+
     return {};
 }
 
@@ -91,7 +198,7 @@ std::optional<std::vector<kernel::Entity>> Scene::compileEntity() const
                                                   });
 
             assert(foundMaterialIter != this->m_materials.cend());
-            uint32_t materialIndexToKernelMtls = foundMaterialIter - this->m_materials.cbegin(); 
+            uint32_t materialIndexToKernelMtls = foundMaterialIter - this->m_materials.cbegin();
 
             spdlog::info("  Entity[id={}] with material[id={}]'s materialIndexToKernelMtls is {}",
                          coreEntity.getID(), coreEntity.getMaterial()->getID(), materialIndexToKernelMtls);
@@ -102,7 +209,7 @@ std::optional<std::vector<kernel::Entity>> Scene::compileEntity() const
 
         return std::make_optional(std::move(kernelEntities));
     }
-    
+
     return {};
 }
 
@@ -118,10 +225,48 @@ std::optional<std::vector<kernel::Material>> Scene::compileMaterials() const
             const core::Material& coreMtl = *this->m_materials[i];
             if (coreMtl.getMaterialType() == MaterialType::Diffuse)
             {
-                kernel::DiffuseMtl kDiffuseMtl{static_cast<const DiffuseMtl*>(&coreMtl)->getReflectance()};
-                kernel::Material kernelMtl{kDiffuseMtl};
+                // Cast to concrete material type.
+                const core::DiffuseMtl* coreDiffuseMtl = static_cast<const core::DiffuseMtl*>(&coreMtl);
 
-                materials[i] = kernelMtl;
+                // Query whether we have a reflectance texture.
+                bool hasReflectanceTex = coreDiffuseMtl->getReflectanceTexture() != nullptr;
+                if (hasReflectanceTex)
+                {
+                    // Query core texture.
+                    const core::Texture* coreTextureBase = coreDiffuseMtl->getReflectanceTexture().get();
+
+                    // TODO: This has to be refactored.
+                    assert(coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D);
+                    if (coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D)
+                    {
+                        // Cast to concrete texture type.
+                        const core::ImageTexture2D* coreImageTex2D = static_cast<const core::ImageTexture2D*>(coreTextureBase);
+
+                        // Query cuda texture object and compile kernel::ImageTexture2D.
+                        kernel::ImageTexture2D kernelImageTex2D{coreImageTex2D->getDeviceTextureObjectPtr()};
+
+                        // Compile kernel::Texture.
+                        kernel::Texture kernelTexture{kernelImageTex2D};
+
+                        // Compile kernel::DiffuseMtl.
+                        kernel::DiffuseMtl kDiffuseMtl{kernelTexture};
+
+                        // Compile kernel::Material.
+                        kernel::Material kernelMtl{kDiffuseMtl};
+
+                        materials[i] = kernelMtl;
+                    }
+                }
+                else
+                {
+                    // Compile kernel::DiffuseMtl.
+                    kernel::DiffuseMtl kDiffuseMtl{coreDiffuseMtl->getReflectance()};
+
+                    // Compile kernel::Material.
+                    kernel::Material kernelMtl{kDiffuseMtl};
+
+                    materials[i] = kernelMtl;
+                }
             }
             assert(coreMtl.getMaterialType() == MaterialType::Diffuse);
         }
@@ -151,7 +296,7 @@ std::optional<std::vector<kernel::Emitter>> Scene::compileEmitters() const
                 kernel::DirectionalEmitter directionalEmitter{coreDirectionalEmitter->getIntensity(),
                                                               coreDirectionalEmitter->getDirection(),
                                                               coreDirectionalEmitter->getAngularRadius()};
-                
+
                 kernel::Emitter kernelEmitter{directionalEmitter};
 
                 kernelEmitters[i] = kernelEmitter;

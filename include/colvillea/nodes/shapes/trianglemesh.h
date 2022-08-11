@@ -40,16 +40,16 @@ struct Triangle
 class TriangleMesh : public Shape
 {
 public:
-    TriangleMesh(const std::vector<vec3f>& verts, const std::vector<Triangle>& tris) :
-        Shape {ShapeType::TriangleMesh},
+    TriangleMesh(Scene* pScene, const std::vector<vec3f>& verts, const std::vector<Triangle>& tris) :
+        Shape {pScene, ShapeType::TriangleMesh},
         m_vertices{verts},
         m_triangles{tris}
     {
         this->m_dataSet = std::make_unique<TriMeshBLAS>(this);
     }
 
-    TriangleMesh(std::vector<vec3f>&& verts, std::vector<Triangle>&& tris) :
-        Shape{ShapeType::TriangleMesh},
+    TriangleMesh(Scene* pScene, std::vector<vec3f>&& verts, std::vector<Triangle>&& tris) :
+        Shape{pScene, ShapeType::TriangleMesh},
         m_vertices{std::move(verts)},
         m_triangles{std::move(tris)}
     {
@@ -85,10 +85,6 @@ public:
     }*/
 
 private:
-    /// Viewing pointer to the scene so that we could notify
-    /// some shape in the scene is changing.
-    //Scene* m_scene{nullptr};
-
     /// Vertex resources for the triangle mesh.
     /// Vertex positions.
     std::vector<vec3f>    m_vertices;

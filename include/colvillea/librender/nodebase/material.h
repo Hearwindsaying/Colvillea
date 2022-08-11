@@ -15,6 +15,8 @@ namespace core
 using vec3f  = owl::common::vec3f;
 using vec3ui = owl::common::vec3ui;
 
+class Texture;
+
 enum class MaterialType : uint32_t
 {
     /// Unknown material type (default value)
@@ -27,9 +29,8 @@ enum class MaterialType : uint32_t
 class Material : public Node
 {
 public:
-    static std::unique_ptr<Material> createMaterial(MaterialType type, const vec3f& reflectance);
-
-    Material(MaterialType type) :
+    Material(Scene* pScene, MaterialType type) :
+        Node {pScene},
         m_materialType{type} {}
 
     MaterialType getMaterialType() const noexcept

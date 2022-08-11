@@ -61,16 +61,18 @@ public:
         return *this;
     }
 
-    CL_CPU_GPU CL_INLINE BSDF getBSDF() const
+#ifdef __CUDACC__
+    CL_GPU CL_INLINE BSDF getBSDF(const vec2f& uv) const
     {
         switch (this->m_materialType)
         {
             case MaterialType::Diffuse:
-                return this->m_diffuseMtl.getBSDF();
+                return this->m_diffuseMtl.getBSDF(uv);
             default:
                 assert(false);
         }
     }
+#endif
 
 private:
     MaterialType m_materialType{MaterialType::Unknown};

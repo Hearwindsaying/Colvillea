@@ -9,8 +9,8 @@ namespace core
 class DirectionalEmitter : public Emitter
 {
 public:
-    DirectionalEmitter(const vec3f& colorMulIntensity, const vec3f& sunDirection, const float sunAngularRadius) :
-        Emitter {kernel::EmitterType::Directional},
+    DirectionalEmitter(Scene *pScene, const vec3f& colorMulIntensity, const vec3f& sunDirection, const float sunAngularRadius) :
+        Emitter {pScene, kernel::EmitterType::Directional},
         m_intensity{colorMulIntensity}, m_direction{sunDirection}, m_angularRadius{sunAngularRadius} {}
 
     const vec3f& getIntensity() const noexcept

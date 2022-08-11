@@ -107,7 +107,7 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
 
     const EvalMaterialsWork& evalMtlsWork = evalMaterialsWorkQueue->getWorkSOA().getVar(jobId);
 
-    const BSDF& bsdf = evalMtlsWork.material->getBSDF();
+    const BSDF& bsdf = evalMtlsWork.material->getBSDF(evalMtlsWork.uv);
 
     // We need a reference to update the rand seed.
     const vec4ui& randSeedConst = evalMtlsWork.sampleSeed;

@@ -15,6 +15,7 @@ namespace colvillea
 namespace core
 {
 class TriangleMesh;
+class Scene;
 }
 
 
@@ -23,14 +24,14 @@ namespace delegate
 class MeshImporter
 {
 public:
-    static std::unique_ptr<core::TriangleMesh> loadDefaultCube();
+    static std::shared_ptr<core::TriangleMesh> loadDefaultCube(core::Scene* scene);
 
-    static std::vector<std::shared_ptr<core::TriangleMesh>> loadMeshes(const std::filesystem::path& meshfile);
+    static std::vector<std::shared_ptr<core::TriangleMesh>> loadMeshes(core::Scene* coreScene, const std::filesystem::path& meshfile);
 
 private:
-    static void processNode(std::vector<std::shared_ptr<core::TriangleMesh>>& meshes, aiNode* node, const aiScene* scene);
+    static void processNode(core::Scene* coreScene, std::vector<std::shared_ptr<core::TriangleMesh>>& meshes, aiNode* node, const aiScene* scene);
 
-    static std::shared_ptr<core::TriangleMesh> processMesh(aiMesh* mesh, const aiScene* scene);
+    static std::shared_ptr<core::TriangleMesh> processMesh(core::Scene* coreScene, aiMesh* mesh, const aiScene* scene);
 };
 } // namespace delegate
 } // namespace colvillea

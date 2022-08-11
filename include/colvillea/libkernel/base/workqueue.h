@@ -27,6 +27,9 @@ struct EvalMaterialsWork
     /// Geometric frame: bitangent.
     vec3f dpdv;
 
+    /// UV coordinates.
+    vec2f uv;
+
     /// Incoming ray (from camera).
     vec3f wo;
 
@@ -56,6 +59,9 @@ struct SOAProxy<EvalMaterialsWork>
     /// Geometric frame: bitangent.
     vec3f* dpdv;
 
+    /// UV coordinates.
+    vec2f* uv;
+
     /// Incoming ray (from camera).
     vec3f* wo;
 
@@ -75,7 +81,8 @@ struct SOAProxy<EvalMaterialsWork>
         this->ng         = reinterpret_cast<vec3f*>(&this->pHit[numElements]);
         this->dpdu       = reinterpret_cast<vec3f*>(&this->ng[numElements]);
         this->dpdv       = reinterpret_cast<vec3f*>(&this->dpdu[numElements]);
-        this->wo         = reinterpret_cast<vec3f*>(&this->dpdv[numElements]);
+        this->uv         = reinterpret_cast<vec2f*>(&this->dpdv[numElements]);
+        this->wo         = reinterpret_cast<vec3f*>(&this->uv[numElements]);
         this->sampleSeed = reinterpret_cast<vec4ui*>(&this->wo[numElements]);
         this->pixelIndex = reinterpret_cast<int*>(&this->sampleSeed[numElements]);
     }
@@ -86,6 +93,7 @@ struct SOAProxy<EvalMaterialsWork>
         sizeof(std::remove_pointer_t<decltype(ng)>) +
         sizeof(std::remove_pointer_t<decltype(dpdu)>) +
         sizeof(std::remove_pointer_t<decltype(dpdv)>) +
+        sizeof(std::remove_pointer_t<decltype(uv)>) +
         sizeof(std::remove_pointer_t<decltype(wo)>) +
         sizeof(std::remove_pointer_t<decltype(sampleSeed)>) +
         sizeof(std::remove_pointer_t<decltype(pixelIndex)>);
@@ -99,6 +107,7 @@ struct SOAProxy<EvalMaterialsWork>
         this->ng[index]         = evalMaterialsWork.ng;
         this->dpdu[index]       = evalMaterialsWork.dpdu;
         this->dpdv[index]       = evalMaterialsWork.dpdv;
+        this->uv[index]         = evalMaterialsWork.uv;
         this->wo[index]         = evalMaterialsWork.wo;
         this->sampleSeed[index] = evalMaterialsWork.sampleSeed;
         this->pixelIndex[index] = evalMaterialsWork.pixelIndex;
@@ -114,6 +123,7 @@ struct SOAProxy<EvalMaterialsWork>
         evalMaterialsWork.ng         = this->ng[index];
         evalMaterialsWork.dpdu       = this->dpdu[index];
         evalMaterialsWork.dpdv       = this->dpdv[index];
+        evalMaterialsWork.uv         = this->uv[index];
         evalMaterialsWork.wo         = this->wo[index];
         evalMaterialsWork.sampleSeed = this->sampleSeed[index];
         evalMaterialsWork.pixelIndex = this->pixelIndex[index];
