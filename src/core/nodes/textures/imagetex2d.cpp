@@ -35,9 +35,9 @@ ImageTexture2D::ImageTexture2D(Scene* pScene, const Image& image) :
                                         0,
                                         0,
                                         image.getImageData(),
-                                        srcPitch,
-                                        resolution.x,
-                                        resolution.y,
+                                        srcPitch /* pitch should be in bytes. */,
+                                        resolution.x * image.getComponentSizeInBytes() * image.getNumComponents() /* width (accounting for components) should be in bytes. */,
+                                        resolution.y /* height should be in **elements**! */,
                                         cudaMemcpyKind::cudaMemcpyDefault));
 
     // Specify texture data.
@@ -46,15 +46,15 @@ ImageTexture2D::ImageTexture2D(Scene* pScene, const Image& image) :
     resDesc.res.array.array = this->m_cuArray;
 
     cudaTextureDesc texDesc{};
-    texDesc.addressMode[0]      = cudaAddressModeWrap;
-    texDesc.addressMode[1]      = cudaAddressModeWrap;
-    texDesc.filterMode          = cudaFilterModeLinear;
-    texDesc.readMode =
+    texDesc.addressMode[0] = cudaAddressModeWrap;
+    texDesc.addressMode[1] = cudaAddressModeWrap;
+    texDesc.filterMode     = cudaFilterModeLinear;
+    texDesc.readMode       = 
         image.getChannelFormat() == ImageTextureChannelFormat::RGBAU8 ? cudaReadModeNormalizedFloat :
                                                                         cudaReadModeElementType;
     texDesc.normalizedCoords    = 1;
-    texDesc.maxAnisotropy       = 1/*clamp(maxAniso, 1, 16)*/;
-    texDesc.maxMipmapLevelClamp = 0/*nMIPMapLevels - 1*/;
+    texDesc.maxAnisotropy       = 1 /*clamp(maxAniso, 1, 16)*/;
+    texDesc.maxMipmapLevelClamp = 0 /*nMIPMapLevels - 1*/;
     texDesc.minMipmapLevelClamp = 0;
     texDesc.mipmapFilterMode    = cudaFilterModeLinear;
     texDesc.borderColor[0] = texDesc.borderColor[1] = texDesc.borderColor[2] =

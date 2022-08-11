@@ -29,6 +29,29 @@ __host__ __device__ float3 make_float3(vec3f val)
     return float3{val.x, val.y, val.z};
 }
 
+__global__ void showImage(kernel::Texture texture,
+                          int             nItems,
+                          uint32_t        width,
+                          uint32_t        height,
+                          vec4f*          outputBuffer)
+{
+    int jobId = blockIdx.x * blockDim.x + threadIdx.x;
+    if (jobId >= nItems)
+        return;
+
+    const int pixelIndex = jobId;
+    vec2ui    pixelPosi  = pixelIndexToPixelPos(pixelIndex, width);
+
+    const vec2f screenUV = vec2f{pixelPosi} / vec2f(width, height);
+
+    vec4f value = texture.eval2D(screenUV);
+    value.w     = 1.0f;
+    /*printf("pixelIndex: %d screenUV:%u %u, value:%u %u %u \n", 
+        pixelIndex,
+        pixelPosi.x, pixelPosi.y, value.x, value.y, value.z);*/
+    outputBuffer[jobId] = value;
+}
+
 __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
                                    int               nItems,
                                    uint32_t          width,
@@ -147,7 +170,7 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
         {
             bool  enableMIS = false;
             float bsdfPdf   = enableMIS ? bsdf.pdf(bsdfSamplingRecord) : 0.0f;
-            float weight    = MISWeightBalanced(dRec.pdf/* / numEmitters*/ /* Brute force sampling. TODO: Remove this and add to sampler. */, bsdfPdf);
+            float weight    = MISWeightBalanced(dRec.pdf /* / numEmitters*/ /* Brute force sampling. TODO: Remove this and add to sampler. */, bsdfPdf);
 
             Li += bsdfVal * Frame::cosTheta(bsdfSamplingRecord.wiLocal) * weight / dRec.pdf;
 

@@ -9,6 +9,12 @@ namespace colvillea
 namespace kernel
 {
 /// global kernel function declarations.
+__global__ void showImage(kernel::Texture texture,
+                          int             nItems,
+                          uint32_t        width,
+                          uint32_t        height,
+                          vec4f*          outputBuffer);
+
 __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
                                    int               nItems,
                                    uint32_t          width,

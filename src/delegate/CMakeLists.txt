@@ -2,10 +2,12 @@ set(CORE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 
 set(INTERFACE_DELEGATE
     ${CORE_INCLUDE_DIR}/delegate/meshimporter.h
+    ${CORE_INCLUDE_DIR}/delegate/imageutil.h
 )
 
 set(SOURCE_DELEGATE
     meshimporter.cpp
+    imageutil.cpp
 )
 
 
@@ -26,6 +28,7 @@ PRIVATE
     colvillea-core
 PUBLIC
     assimp::assimp
+    stb_image
 )
 
 # If we use assimp dlls, we should define ASSIMP_DLL to import the library.

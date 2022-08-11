@@ -10,6 +10,7 @@
 #include <librender/nodebase/emitter.h>
 
 #include <delegate/meshimporter.h>
+#include <delegate/imageutil.h>
 
 #include "CLViewer.h"
 
@@ -48,6 +49,10 @@ int main(int argc, char* argv[])
     }
 
     pSceneViewer->createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
+
+    //auto texture = delegate::ImageUtils::loadImageFromDisk(dir / "bamboo-wood-semigloss-albedo.tga");
+    //auto texture = delegate::ImageUtils::loadTest2x2Image();
+    //pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, texture);
 
     /*pRenderEngine->startRendering();
     pRenderEngine->endRendering();*/

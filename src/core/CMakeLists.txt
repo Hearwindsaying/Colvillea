@@ -225,7 +225,6 @@ target_link_libraries(colvillea-core
 PRIVATE
     BuildSettings
     optixdevice-kernel-ptx
-    stb_image
     colvillea-kernel
 PUBLIC
     spdlog::spdlog

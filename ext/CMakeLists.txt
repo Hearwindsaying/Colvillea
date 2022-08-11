@@ -34,6 +34,10 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(optix-owl)
 
+set_target_properties(owl PROPERTIES
+    FOLDER external
+)
+
 # Fetch spdlog
 FetchContent_Declare(
     spdlog

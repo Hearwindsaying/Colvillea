@@ -78,6 +78,10 @@ void WavefrontPathTracingIntegrator::render()
 
     kernel::SOAProxy<kernel::RayWork> rayworkSOA{const_cast<void*>(this->m_rayworkBuff->getDevicePtr()), static_cast<uint32_t>(workItems)};
 
+    // Test.
+    //this->m_cudaDevice->launchShowImageKernel(workItems, tex, this->m_width, this->m_height, this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>());
+
+
     // Generate primary camera rays.
     this->m_cudaDevice->launchGenerateCameraRaysKernel(rayworkSOA,
                                                        workItems,

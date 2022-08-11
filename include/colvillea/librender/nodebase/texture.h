@@ -64,6 +64,39 @@ public:
         }
     }
 
+    size_t getComponentSizeInBytes() const noexcept
+    {
+        switch (this->m_channelFormat)
+        {
+            case ImageTextureChannelFormat::RGBA32F:
+                return sizeof(float);
+            case ImageTextureChannelFormat::RGBA16F:
+                // Half type?
+                return sizeof(float) / 2;
+            case ImageTextureChannelFormat::RGBAU8:
+                return sizeof(uint8_t);
+            default:
+                spdlog::critical("Unknown image texture channel format!");
+                assert(false);
+                return 0;
+        }
+    }
+
+    size_t getNumComponents() const noexcept
+    {
+        switch (this->m_channelFormat)
+        {
+            case ImageTextureChannelFormat::RGBA32F:
+            case ImageTextureChannelFormat::RGBA16F:
+            case ImageTextureChannelFormat::RGBAU8:
+                return 4;
+            default:
+                spdlog::critical("Unknown image texture channel format!");
+                assert(false);
+                return 0;
+        }
+    }
+
     ImageTextureChannelFormat getChannelFormat() const noexcept
     {
         return this->m_channelFormat;

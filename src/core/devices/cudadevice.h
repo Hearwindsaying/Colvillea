@@ -25,7 +25,12 @@ class CUDADevice : public Device
 {
 public:
     CUDADevice() :
-        Device{"CUDADevice", DeviceType::CUDADevice} {}
+        Device{"CUDADevice", DeviceType::CUDADevice} { }
+
+    void launchShowImageKernel(int nItems, kernel::Texture texture, uint32_t width, uint32_t height, vec4f* outputBuffer)
+    {
+        this->launchKernelSync(&kernel::showImage, nItems, texture, nItems, width, height, outputBuffer);
+    }
 
     /**
      * \brief
