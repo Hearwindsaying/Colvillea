@@ -20,6 +20,15 @@ struct TriMesh
 
     /// Vertices array of the trimesh.
     vec3f* vertices;
+
+    /// Optional: vertex normals.
+    vec3f* normals;
+
+    /// Optional: vertex tangents.
+    vec3f* tangents;
+
+    /// Optional: vertex uvs.
+    vec2f* uvs;
 };
 } // namespace kernel
 } // namespace colvillea

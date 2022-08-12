@@ -13,7 +13,10 @@ namespace delegate
 {
 std::shared_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube(core::Scene* scene)
 {
-    assert(scene != nullptr);
+    // TODO: Finish implementation.
+    assert(false);
+    return {};
+    /*assert(scene != nullptr);
     spdlog::info("Loading a default cube.");
 
     const int NUM_VERTICES = 8;
@@ -32,7 +35,7 @@ std::shared_ptr<core::TriangleMesh> MeshImporter::loadDefaultCube(core::Scene* s
     std::vector<core::Triangle> triangles{
         {0, 1, 3}, {2, 3, 0}, {5, 7, 6}, {5, 6, 4}, {0, 4, 5}, {0, 5, 1}, {2, 3, 7}, {2, 7, 6}, {1, 5, 7}, {1, 7, 3}, {4, 0, 2}, {4, 2, 6}};
 
-    return scene->createTriangleMesh(std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles));
+    return scene->createTriangleMesh(std::vector<vec3f>(vertices, vertices + NUM_VERTICES), std::move(triangles));*/
 }
 
 std::vector<std::shared_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(core::Scene* coreScene, const std::filesystem::path& meshfile)
@@ -43,6 +46,7 @@ std::vector<std::shared_ptr<core::TriangleMesh>> MeshImporter::loadMeshes(core::
     const aiScene*   scene = importer.ReadFile(meshfile.string().c_str(),
                                                aiProcess_Triangulate |
                                                    aiProcess_GenSmoothNormals |
+                                                   aiProcess_GenUVCoords |
                                                    aiProcess_FlipUVs |
                                                    aiProcess_CalcTangentSpace);
 
@@ -86,12 +90,18 @@ std::shared_ptr<core::TriangleMesh> MeshImporter::processMesh(core::Scene* coreS
 
     // data to fill
     std::vector<vec3f>          vertices;
+    std::vector<vec3f>          normals;
+    std::vector<vec3f>          tangents;
+    std::vector<vec2f>          uvs;
     std::vector<core::Triangle> triangles;
 
     // walk through each of the mesh's vertices
     for (auto i = 0; i < mesh->mNumVertices; ++i)
     {
         vertices.push_back(vec3f(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z));
+        normals.push_back(vec3f(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z));
+        tangents.push_back(vec3f(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z));
+        uvs.push_back(vec2f(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y));
     }
 
     // now walk through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
@@ -105,7 +115,8 @@ std::shared_ptr<core::TriangleMesh> MeshImporter::processMesh(core::Scene* coreS
         triangles.push_back(core::Triangle{face.mIndices[0], face.mIndices[1], face.mIndices[2]});
     }
     // return a mesh object created from the extracted mesh data
-    return coreScene->createTriangleMesh(std::move(vertices), std::move(triangles));
+    return coreScene->createTriangleMesh(std::move(vertices), std::move(triangles),
+                                         std::move(normals), std::move(tangents), std::move(uvs));
 }
 } // namespace delegate
 } // namespace colvillea

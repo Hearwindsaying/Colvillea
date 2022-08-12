@@ -146,7 +146,7 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
     vec3f value = LightSampler::sampleEmitterDirect(emitters, numEmitters, &dRec, sample);
     if (value.x > 0.0f && value.y > 0.0f && value.z > 0.0f && dRec.pdf > 0.0f)
     {
-        Frame shadingFrame{evalMtlsWork.dpdv, evalMtlsWork.dpdu, evalMtlsWork.ng};
+        Frame shadingFrame{evalMtlsWork.dpdv, evalMtlsWork.dpdu, evalMtlsWork.ns};
 
         /*printf("tangent: %f %f %f, bitangent :%f %f %f, normal: %f %f %f\n",
                shadingFrame.t.x, shadingFrame.t.y, shadingFrame.t.z,

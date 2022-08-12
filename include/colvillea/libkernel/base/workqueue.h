@@ -22,9 +22,12 @@ struct EvalMaterialsWork
 
     /// Geometric frame: geometric normal.
     vec3f ng;
-    /// Geometric frame: tangent.
+
+    /// Shading frame: shading normal.
+    vec3f ns;
+    /// Shading frame: tangent.
     vec3f dpdu;
-    /// Geometric frame: bitangent.
+    /// Shading frame: bitangent.
     vec3f dpdv;
 
     /// UV coordinates.
@@ -54,6 +57,8 @@ struct SOAProxy<EvalMaterialsWork>
 
     /// Geometric frame: geometric normal.
     vec3f* ng;
+    /// Shading frame: shading normal.
+    vec3f* ns;
     /// Geometric frame: tangent.
     vec3f* dpdu;
     /// Geometric frame: bitangent.
@@ -79,7 +84,8 @@ struct SOAProxy<EvalMaterialsWork>
         this->material   = static_cast<const Material**>(devicePtr);
         this->pHit       = reinterpret_cast<vec3f*>(&this->material[numElements]);
         this->ng         = reinterpret_cast<vec3f*>(&this->pHit[numElements]);
-        this->dpdu       = reinterpret_cast<vec3f*>(&this->ng[numElements]);
+        this->ns         = reinterpret_cast<vec3f*>(&this->ng[numElements]);
+        this->dpdu       = reinterpret_cast<vec3f*>(&this->ns[numElements]);
         this->dpdv       = reinterpret_cast<vec3f*>(&this->dpdu[numElements]);
         this->uv         = reinterpret_cast<vec2f*>(&this->dpdv[numElements]);
         this->wo         = reinterpret_cast<vec3f*>(&this->uv[numElements]);
@@ -91,6 +97,7 @@ struct SOAProxy<EvalMaterialsWork>
         sizeof(std::remove_pointer_t<decltype(material)>) +
         sizeof(std::remove_pointer_t<decltype(pHit)>) +
         sizeof(std::remove_pointer_t<decltype(ng)>) +
+        sizeof(std::remove_pointer_t<decltype(ns)>) +
         sizeof(std::remove_pointer_t<decltype(dpdu)>) +
         sizeof(std::remove_pointer_t<decltype(dpdv)>) +
         sizeof(std::remove_pointer_t<decltype(uv)>) +
@@ -105,6 +112,7 @@ struct SOAProxy<EvalMaterialsWork>
         this->material[index]   = evalMaterialsWork.material;
         this->pHit[index]       = evalMaterialsWork.pHit;
         this->ng[index]         = evalMaterialsWork.ng;
+        this->ns[index]         = evalMaterialsWork.ns;
         this->dpdu[index]       = evalMaterialsWork.dpdu;
         this->dpdv[index]       = evalMaterialsWork.dpdv;
         this->uv[index]         = evalMaterialsWork.uv;
@@ -121,6 +129,7 @@ struct SOAProxy<EvalMaterialsWork>
         evalMaterialsWork.material   = this->material[index];
         evalMaterialsWork.pHit       = this->pHit[index];
         evalMaterialsWork.ng         = this->ng[index];
+        evalMaterialsWork.ns         = this->ns[index];
         evalMaterialsWork.dpdu       = this->dpdu[index];
         evalMaterialsWork.dpdv       = this->dpdv[index];
         evalMaterialsWork.uv         = this->uv[index];

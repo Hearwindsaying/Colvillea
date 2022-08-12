@@ -149,16 +149,25 @@ public:
 
     std::shared_ptr<Material> createMaterial(MaterialType type, const std::shared_ptr<Texture>& reflectanceTex);
 
-    template <typename VertsVecType, typename TrisVecType>
-    std::shared_ptr<TriangleMesh> createTriangleMesh(VertsVecType&& verts,
-                                                     TrisVecType&&  tris)
+    template <typename VertsVecType, typename TrisVecType, typename NormalsVecType, typename TangentsVecType, typename UVsVecType>
+    std::shared_ptr<TriangleMesh> createTriangleMesh(VertsVecType&&    verts,
+                                                     TrisVecType&&     tris,
+                                                     NormalsVecType&&  normals,
+                                                     TangentsVecType&& tangents,
+                                                     UVsVecType&&      uvs)
     {
         static_assert(std::is_same_v<decltype(verts), const std::vector<vec3f>&> ||
                       std::is_same_v<decltype(verts), std::vector<vec3f>&&>);
         static_assert(std::is_same_v<decltype(tris), const std::vector<Triangle>&> ||
                       std::is_same_v<decltype(tris), std::vector<Triangle>&&>);
 
-        std::shared_ptr<TriangleMesh> triMesh = std::make_shared<TriangleMesh>(this, std::forward<VertsVecType>(verts), std::forward<TrisVecType>(tris));
+        std::shared_ptr<TriangleMesh> triMesh =
+            std::make_shared<TriangleMesh>(this,
+                                           std::forward<VertsVecType>(verts),
+                                           std::forward<NormalsVecType>(normals),
+                                           std::forward<TangentsVecType>(tangents),
+                                           std::forward<UVsVecType>(uvs),
+                                           std::forward<TrisVecType>(tris));
         this->addTriMesh(triMesh);
 
         return triMesh;

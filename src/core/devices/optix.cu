@@ -102,6 +102,8 @@ OPTIX_RAYGEN_PROGRAM(shadowRay)
 OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 ()
 {
+    // TODO: Add instancing/transform support. We assume no explicit transformation is attached to the BLAS.
+
     // pixelIndex is the same as jobIndex, since this is primary ray generation.
     //int pixelIndex = optixGetLaunchIndex().x;
     const int jobId = optixGetLaunchIndex().x;
@@ -123,10 +125,23 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 
     const uint32_t primitiveIndex = optixGetPrimitiveIndex();
     const vec3i    triangleIndex  = trimesh.indices[primitiveIndex];
-    const vec3f&   p0             = trimesh.vertices[triangleIndex.x];
-    const vec3f&   p1             = trimesh.vertices[triangleIndex.y];
-    const vec3f&   p2             = trimesh.vertices[triangleIndex.z];
 
+    // Vertex positions.
+    const vec3f& p0 = trimesh.vertices[triangleIndex.x];
+    const vec3f& p1 = trimesh.vertices[triangleIndex.y];
+    const vec3f& p2 = trimesh.vertices[triangleIndex.z];
+
+    // Vertex uvs.
+    const vec2f& uv0 = trimesh.uvs != nullptr ? trimesh.uvs[triangleIndex.x] : vec2f{1.0, 1.0};
+    const vec2f& uv1 = trimesh.uvs != nullptr ? trimesh.uvs[triangleIndex.y] : vec2f{1.0, 1.0};
+    const vec2f& uv2 = trimesh.uvs != nullptr ? trimesh.uvs[triangleIndex.z] : vec2f{1.0, 1.0};
+
+    // Vertex normals.
+    const vec3f& normal0 = trimesh.normals != nullptr ? trimesh.normals[triangleIndex.x] : vec3f{1.0f, 1.0f, 1.0f};
+    const vec3f& normal1 = trimesh.normals != nullptr ? trimesh.normals[triangleIndex.y] : vec3f{1.0f, 1.0f, 1.0f};
+    const vec3f& normal2 = trimesh.normals != nullptr ? trimesh.normals[triangleIndex.z] : vec3f{1.0f, 1.0f, 1.0f};
+
+    // Barycentric coordinates.
     float b1 = optixGetTriangleBarycentrics().x;
     float b2 = optixGetTriangleBarycentrics().y;
     float b0 = 1.0f - b1 - b2;
@@ -135,14 +150,63 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
     // numerically stable result (than ray's parametric equation).
     evalMtlsWork.pHit = b0 * p0 + b1 * p1 + b2 * p2;
 
-    const vec3f Ng = normalize(cross(p1 - p0, p2 - p0));
+    // Interpolate uv coordinates.
+    evalMtlsWork.uv = trimesh.uvs != nullptr ? b0 * uv0 + b1 * uv1 + b2 * uv2 : vec2f{b0, b1};
+
+    // Geometric normal.
+    vec3f Ng = normalize(cross(p1 - p0, p2 - p0));
+    // Shading normal.
+    vec3f Ns = normalize(trimesh.normals != nullptr ?
+                             b0 * normal0 + b1 * normal1 + b2 * normal2 :
+                             Ng);
+
+    // Sometimes Ns could be degenerate in which case we make it to geometric normal.
+    if (dot(Ns, Ns) == 0.0f)
+    {
+        Ns = Ng;
+    }
+
+    // Align geometric normal with shading normal.
+    // What if shading normal converts to LHS?
+    if (dot(Ng, Ns) < 0)
+    {
+        Ng = -Ng;
+    }
+
+    // TODO: We assume tangents must exist.
+    assert(trimesh.tangents != nullptr);
+    // Vertex normals.
+    const vec3f& tangent0 = trimesh.tangents[triangleIndex.x];
+    const vec3f& tangent1 = trimesh.tangents[triangleIndex.y];
+    const vec3f& tangent2 = trimesh.tangents[triangleIndex.z];
+
+    vec3f dpdu = normalize(b0 * tangent0 + b1 * tangent1 + b2 * tangent2);
+    vec3f dpdv{};
+    if (dot(dpdu, dpdu) > 0.0f)
+    {
+        dpdv = cross(Ns, dpdu);
+        if (dot(dpdv, dpdv) > 0.0f)
+        {
+            dpdv = normalize(dpdv);
+            dpdu = cross(dpdv, Ns);
+        }
+        else
+        {
+            makeFrame(Ns, &dpdu, &dpdv);
+        }
+    }
+    else
+    {
+        makeFrame(Ns, &dpdu, &dpdv);
+    }
 
     //printf("primID %d, index %u %u %u, A %f %f %f, B %f %f %f, C %f %f %f\n",
     //       primID, index.x, index.y, index.z, A.x, A.y, A.z, B.x, B.y, B.z, C.x, C.y, C.z);
 
-    evalMtlsWork.ng = Ng;
-    makeFrame(Ng, &evalMtlsWork.dpdu, &evalMtlsWork.dpdv);
-    evalMtlsWork.uv = vec2f{b1, b2};
+    evalMtlsWork.ng   = Ng;
+    evalMtlsWork.ns   = Ns;
+    evalMtlsWork.dpdu = dpdu;
+    evalMtlsWork.dpdv = dpdv;
 
     evalMtlsWork.wo         = optixGetWorldRayDirection();
     evalMtlsWork.wo         = -evalMtlsWork.wo;

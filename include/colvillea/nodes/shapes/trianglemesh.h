@@ -14,6 +14,8 @@ namespace colvillea
 /// in header file.
 using vec3f  = owl::common::vec3f;
 using vec3ui = owl::common::vec3ui;
+using vec2f  = owl::common::vec2f;
+using vec2ui = owl::common::vec2ui;
 
 namespace core
 {
@@ -40,17 +42,33 @@ struct Triangle
 class TriangleMesh : public Shape
 {
 public:
-    TriangleMesh(Scene* pScene, const std::vector<vec3f>& verts, const std::vector<Triangle>& tris) :
-        Shape {pScene, ShapeType::TriangleMesh},
+    TriangleMesh(Scene*                       pScene,
+                 const std::vector<vec3f>&    verts,
+                 const std::vector<vec3f>&    normals,
+                 const std::vector<vec3f>&    tangents,
+                 const std::vector<vec2f>&    uvs,
+                 const std::vector<Triangle>& tris) :
+        Shape{pScene, ShapeType::TriangleMesh},
         m_vertices{verts},
+        m_normals{normals},
+        m_tangents{tangents},
+        m_uvs{uvs},
         m_triangles{tris}
     {
         this->m_dataSet = std::make_unique<TriMeshBLAS>(this);
     }
 
-    TriangleMesh(Scene* pScene, std::vector<vec3f>&& verts, std::vector<Triangle>&& tris) :
+    TriangleMesh(Scene*                  pScene,
+                 std::vector<vec3f>&&    verts,
+                 std::vector<vec3f>&&    normals,
+                 std::vector<vec3f>&&    tangents,
+                 std::vector<vec2f>&&    uvs,
+                 std::vector<Triangle>&& tris) :
         Shape{pScene, ShapeType::TriangleMesh},
         m_vertices{std::move(verts)},
+        m_normals{std::move(normals)},
+        m_tangents{std::move(tangents)},
+        m_uvs{std::move(uvs)},
         m_triangles{std::move(tris)}
     {
         this->m_dataSet = std::make_unique<TriMeshBLAS>(this);
@@ -59,6 +77,21 @@ public:
     const std::vector<vec3f>& getVertices() const
     {
         return this->m_vertices;
+    }
+
+    const std::vector<vec3f>& getNormals() const
+    {
+        return this->m_normals;
+    }
+
+    const std::vector<vec3f>& getTangents() const
+    {
+        return this->m_tangents;
+    }
+
+    const std::vector<vec2f>& getUVs() const
+    {
+        return this->m_uvs;
     }
 
     const std::vector<Triangle>& getTriangles() const
@@ -87,7 +120,16 @@ public:
 private:
     /// Vertex resources for the triangle mesh.
     /// Vertex positions.
-    std::vector<vec3f>    m_vertices;
+    std::vector<vec3f> m_vertices;
+
+    /// Vertex normals.
+    std::vector<vec3f> m_normals;
+
+    /// Vertex tangents.
+    std::vector<vec3f> m_tangents;
+
+    /// Vertex uvs.
+    std::vector<vec2f> m_uvs;
 
     /// Index to vertex resources composing triangles.
     std::vector<Triangle> m_triangles;

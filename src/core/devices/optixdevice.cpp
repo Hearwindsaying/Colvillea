@@ -33,16 +33,20 @@ OptiXDevice::OptiXDevice() :
     // declare geometry type
     // -------------------------------------------------------
     OWLVarDecl trianglesGeomVars[] = {
-        {"index", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, indices)},
-        {"vertex", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, vertices)}};
+        {"indices", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, indices)},
+        {"vertices", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, vertices)},
+        {"normals", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, normals)},
+        {"tangents", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, tangents)},
+        {"uvs", OWL_BUFPTR, OWL_OFFSETOF(kernel::TriMesh, uvs)},
+    };
     this->m_owlTriMeshGeomType = owlGeomTypeCreate(this->m_owlContext,
                                                    OWL_TRIANGLES,
                                                    sizeof(kernel::TriMesh),
-                                                   trianglesGeomVars, 2);
-    owlGeomTypeSetClosestHit(this->m_owlTriMeshGeomType, /* GeomType */
-                             0,                          /* Ray type*/
-                             this->m_owlModule,          /* Module*/
-                             "trianglemesh"              /* ClosestHit program name without optix prefix*/
+                                                   trianglesGeomVars, _countof(trianglesGeomVars));
+    owlGeomTypeSetClosestHit(this->m_owlTriMeshGeomType,  /* GeomType */
+                             kernel::primaryRayTypeIndex, /* Ray type*/
+                             this->m_owlModule,           /* Module*/
+                             "trianglemesh"               /* ClosestHit program name without optix prefix*/
     );
 
     // ##################################################################
@@ -133,20 +137,35 @@ void OptiXDevice::buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimes
     {
         trimesh->getTriMeshBLAS()->resetDeviceBuffers();
 
-        auto& vertBuffer  = trimesh->getTriMeshBLAS()->vertBuffer;
-        auto& indexBuffer = trimesh->getTriMeshBLAS()->indexBuffer;
-        auto& geom        = trimesh->getTriMeshBLAS()->geom;
-        auto& geomGroup   = trimesh->getTriMeshBLAS()->geomGroup;
+        auto& vertBuffer    = trimesh->getTriMeshBLAS()->vertBuffer;
+        auto& indexBuffer   = trimesh->getTriMeshBLAS()->indexBuffer;
+        auto& normalBuffer  = trimesh->getTriMeshBLAS()->normalBuffer;
+        auto& tangentBuffer = trimesh->getTriMeshBLAS()->tangentBuffer;
+        auto& uvBuffer      = trimesh->getTriMeshBLAS()->uvBuffer;
+        auto& geom          = trimesh->getTriMeshBLAS()->geom;
+        auto& geomGroup     = trimesh->getTriMeshBLAS()->geomGroup;
 
         // Build OWLGeom and setup vertex/index buffers for triangle mesh.
-        vertBuffer  = owlDeviceBufferCreate(this->m_owlContext,
-                                            OWL_FLOAT3,
-                                            trimesh->getVertices().size(),
-                                            trimesh->getVertices().data());
-        indexBuffer = owlDeviceBufferCreate(this->m_owlContext,
-                                            OWL_UINT3,
-                                            trimesh->getTriangles().size(),
-                                            trimesh->getTriangles().data());
+        vertBuffer    = owlDeviceBufferCreate(this->m_owlContext,
+                                              OWL_FLOAT3,
+                                              trimesh->getVertices().size(),
+                                              trimesh->getVertices().data());
+        indexBuffer   = owlDeviceBufferCreate(this->m_owlContext,
+                                              OWL_UINT3,
+                                              trimesh->getTriangles().size(),
+                                              trimesh->getTriangles().data());
+        normalBuffer  = owlDeviceBufferCreate(this->m_owlContext,
+                                              OWL_FLOAT3,
+                                              trimesh->getNormals().size(),
+                                              trimesh->getNormals().data());
+        tangentBuffer = owlDeviceBufferCreate(this->m_owlContext,
+                                              OWL_FLOAT3,
+                                              trimesh->getTangents().size(),
+                                              trimesh->getTangents().data());
+        uvBuffer      = owlDeviceBufferCreate(this->m_owlContext,
+                                              OWL_FLOAT2,
+                                              trimesh->getUVs().size(),
+                                              trimesh->getUVs().data());
 
         geom = owlGeomCreate(this->m_owlContext, this->m_owlTriMeshGeomType);
         owlTrianglesSetVertices(geom, vertBuffer,
@@ -154,8 +173,12 @@ void OptiXDevice::buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimes
         owlTrianglesSetIndices(geom, indexBuffer,
                                trimesh->getTriangles().size(), sizeof(Triangle), 0);
 
-        owlGeomSetBuffer(geom, "vertex", vertBuffer);
-        owlGeomSetBuffer(geom, "index", indexBuffer);
+        owlGeomSetBuffer(geom, "vertices", vertBuffer);
+        owlGeomSetBuffer(geom, "indices", indexBuffer);
+        owlGeomSetBuffer(geom, "normals", normalBuffer);
+        owlGeomSetBuffer(geom, "tangents", tangentBuffer);
+        owlGeomSetBuffer(geom, "uvs", uvBuffer);
+
 
         // Build GeometryGroup for triangles.
         // GeometryGroup = Geom(s) + AS
@@ -176,6 +199,8 @@ void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& tr
     {
         // BLAS must be built before.
         assert(trimesh->getTriMeshBLAS()->vertBuffer && trimesh->getTriMeshBLAS()->indexBuffer &&
+               trimesh->getTriMeshBLAS()->normalBuffer && trimesh->getTriMeshBLAS()->tangentBuffer &&
+               trimesh->getTriMeshBLAS()->uvBuffer &&
                trimesh->getTriMeshBLAS()->geom && trimesh->getTriMeshBLAS()->geomGroup);
 
         groupTLAS.push_back(trimesh->getTriMeshBLAS()->geomGroup);
@@ -238,7 +263,7 @@ void OptiXDevice::launchTraceShadowRayKernel(size_t                             
     //spdlog::info("OptiX Device launching tracing shadow rays kernel.");
 
     owlParamsSet1ul(this->m_launchParams, "outputBuffer", reinterpret_cast<uint64_t>(outputBufferDevPtr));
-    owlParamsSet1ul(this->m_launchParams, "evalShadowRayWorkQueue", reinterpret_cast<uint64_t> (evalShadowRayWorkQueueDevPtr));
+    owlParamsSet1ul(this->m_launchParams, "evalShadowRayWorkQueue", reinterpret_cast<uint64_t>(evalShadowRayWorkQueueDevPtr));
 
     // OWL does not support 1D launching...
     owlLaunch2D(this->m_raygenShadowRay, nItems, 1, this->m_launchParams);

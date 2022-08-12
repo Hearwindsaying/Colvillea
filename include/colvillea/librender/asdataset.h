@@ -46,10 +46,13 @@ public:
         assert(this->trimesh != nullptr);
         this->destroyDeviceBuffers();
 
-        this->vertBuffer  = nullptr;
-        this->indexBuffer = nullptr;
-        this->geom        = nullptr;
-        this->geomGroup   = nullptr;
+        this->vertBuffer    = nullptr;
+        this->indexBuffer   = nullptr;
+        this->normalBuffer  = nullptr;
+        this->tangentBuffer = nullptr;
+        this->uvBuffer      = nullptr;
+        this->geom          = nullptr;
+        this->geomGroup     = nullptr;
     }
 
     /// Destructor: once it is called, this object
@@ -69,6 +72,12 @@ private:
             owlBufferRelease(this->vertBuffer);
         if (this->indexBuffer)
             owlBufferRelease(this->indexBuffer);
+        if (this->normalBuffer)
+            owlBufferRelease(this->normalBuffer);
+        if (this->tangentBuffer)
+            owlBufferRelease(this->tangentBuffer);
+        if (this->uvBuffer)
+            owlBufferRelease(this->uvBuffer);
         if (this->geom)
             owlGeomRelease(this->geom);
         if (this->geomGroup)
@@ -81,6 +90,9 @@ private:
     const TriangleMesh* trimesh{nullptr};
     OWLBuffer           vertBuffer{nullptr};
     OWLBuffer           indexBuffer{nullptr};
+    OWLBuffer           normalBuffer{nullptr};
+    OWLBuffer           tangentBuffer{nullptr};
+    OWLBuffer           uvBuffer{nullptr};
     OWLGeom             geom{nullptr};
     OWLGroup            geomGroup{nullptr};
 };
