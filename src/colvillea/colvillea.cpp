@@ -41,7 +41,12 @@ int main(int argc, char* argv[])
 
     auto objMeshes = delegate::MeshImporter::loadMeshes(pSceneViewer, dir / "leftrightplane.obj");
     //std::shared_ptr<core::TriangleMesh> cubeMesh = delegate::MeshImporter::loadDefaultCube();
-    std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMaterial(core::MaterialType::Diffuse, vec3f{1.0f});
+
+    auto image = delegate::ImageUtils::loadImageFromDisk(dir / "bamboo-wood-semigloss-albedo.tga");
+    //auto texture = delegate::ImageUtils::loadTest2x2Image();
+    auto texture = pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, image);
+
+    std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMaterial(core::MaterialType::Diffuse, texture);
 
     for (const auto& triMesh : objMeshes)
     {
@@ -49,10 +54,6 @@ int main(int argc, char* argv[])
     }
 
     pSceneViewer->createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
-
-    //auto texture = delegate::ImageUtils::loadImageFromDisk(dir / "bamboo-wood-semigloss-albedo.tga");
-    //auto texture = delegate::ImageUtils::loadTest2x2Image();
-    //pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, texture);
 
     /*pRenderEngine->startRendering();
     pRenderEngine->endRendering();*/
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
 
     CLViewer clviewer{std::move(pRenderEngine), pSceneViewer};
 
-    const vec3f lookFrom(-4.f, -3.f, -2.f);
+    const vec3f lookFrom(-4.f, 3.f, -2.f);
     const vec3f lookAt(0.f, 0.f, 0.f);
     const vec3f lookUp(0.f, 1.f, 0.f);
     const float cosFovy = 0.66f;

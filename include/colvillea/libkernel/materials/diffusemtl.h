@@ -25,7 +25,7 @@ public:
             vec3f{this->m_reflectanceTex.eval2D(uv)} :
             this->m_reflectance;
 
-        return BSDF{SmoothDiffuse{this->m_reflectance}};
+        return BSDF{SmoothDiffuse{reflectanceValue}};
     }
 #endif
 

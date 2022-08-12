@@ -21,7 +21,7 @@ class SmoothDiffuse/* : public BSDF*/
 public:
     CL_CPU_GPU
     SmoothDiffuse(const vec3f reflectance) :
-        m_reflectance{reflectance} {}
+        m_reflectance{reflectance} { }
 
     /// <summary>
     ///
@@ -32,11 +32,13 @@ public:
     vec3f eval(const BSDFSamplingRecord& bRec) const
     {
         // BSDF side check.
+        
         if (Frame::cosTheta(bRec.woLocal) <= 0.0f ||
             Frame::cosTheta(bRec.wiLocal) <= 0.0f)
         {
             return vec3f{0.0f};
         }
+        //printf("refl:%f %f %f\n", this->m_reflectance.x, this->m_reflectance.y, this->m_reflectance.z);
 
         return this->m_reflectance * M_1_PIf;
     }

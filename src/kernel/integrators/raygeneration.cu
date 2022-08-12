@@ -131,6 +131,9 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
     const EvalMaterialsWork& evalMtlsWork = evalMaterialsWorkQueue->getWorkSOA().getVar(jobId);
 
     const BSDF& bsdf = evalMtlsWork.material->getBSDF(evalMtlsWork.uv);
+    /*printf("diffuse lookup reflectance %f %f %f\n", bsdf.m_smoothDiffuse.m_reflectance.x,
+           bsdf.m_smoothDiffuse.m_reflectance.y,
+           bsdf.m_smoothDiffuse.m_reflectance.z);*/
 
     // We need a reference to update the rand seed.
     const vec4ui& randSeedConst = evalMtlsWork.sampleSeed;
