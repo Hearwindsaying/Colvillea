@@ -82,6 +82,13 @@ public:
         this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalMaterialsWorkQueue, evalShadowRayWorkQueue);
     }
 
+    void launchPostProcessingKernel(vec4f* outputBuffer, int nItems)
+    {
+        assert(outputBuffer != nullptr);
+        this->launchKernelSync(&kernel::postprocessing, nItems,
+                               outputBuffer, nItems);
+    }
+
 
 protected:
     /**

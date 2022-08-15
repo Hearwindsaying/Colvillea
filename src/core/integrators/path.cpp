@@ -139,6 +139,9 @@ void WavefrontPathTracingIntegrator::render()
                                                 this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
                                                 this->m_evalShadowRayWorkQueueBuff.getDevicePtr());
 
+    // Post processing.
+    this->m_cudaDevice->launchPostProcessingKernel(this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                   this->m_queueCapacity);
 
     ++this->m_iterationIndex;
 

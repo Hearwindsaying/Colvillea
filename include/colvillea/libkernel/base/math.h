@@ -59,5 +59,55 @@ CL_CPU_GPU CL_INLINE vec4f accumulate_unbiased(const vec3f& currRadiance, const 
                     vec4f{(1.0f - currRadiance) * prevRadiance + currRadiance / (1.0f + N), 1.0f};*/
 }
 
+/*
+ * \brief degamma function converts linear color to sRGB color
+ * for display
+ * \param src input value, alpha channel is not affected
+ * \return corresponding sRGB encoded color in float4. Alpha channel
+ * is left unchanged.
+ * \ref https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_texture_sRGB_decode.txt
+ * \see convertsRGBToLinear
+ **/
+CL_CPU_GPU CL_INLINE vec4f convertFromLinearTosRGB(const vec4f& src)
+{
+    vec4f dst = src;
+    dst.x      = (dst.x < 0.0031308f) ? dst.x * 12.92f : (1.055f * powf(dst.x, 0.41666f) - 0.055f);
+    dst.y      = (dst.y < 0.0031308f) ? dst.y * 12.92f : (1.055f * powf(dst.y, 0.41666f) - 0.055f);
+    dst.z      = (dst.z < 0.0031308f) ? dst.z * 12.92f : (1.055f * powf(dst.z, 0.41666f) - 0.055f);
+    dst.w      = 1.0f;
+    return dst;
+}
+
+/*
+ * \brief converts one of the sRGB color channel to linear
+ * \param src input value
+ * \return corresponding linear space color channel
+ * \ref https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_texture_sRGB_decode.txt
+ * \see convertFromLinearTosRGB
+ **/
+CL_CPU_GPU CL_INLINE float convertsRGBToLinear(const float& src)
+{
+    if (src <= 0.f)
+        return 0;
+    if (src >= 1.f)
+        return 1.f;
+    if (src <= 0.04045f)
+        return src / 12.92f;
+    return pow((src + 0.055f) / 1.055f, 2.4f);
+};
+
+/*
+ * \brief converts sRGB color to linear color
+ * \param src input value, alpha channel is not affected
+ * \return corresponding linear space color in float4. Alpha channel
+ * is left unchanged.
+ * \ref https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_texture_sRGB_decode.txt
+ * \see convertFromLinearTosRGB
+ **/
+CL_CPU_GPU CL_INLINE vec4f convertsRGBToLinear(const vec4f& src)
+{
+    return vec4f(convertsRGBToLinear(src.x), convertsRGBToLinear(src.y), convertsRGBToLinear(src.z), 1.f);
+}
+
 } // namespace kernel
 } // namespace colvillea

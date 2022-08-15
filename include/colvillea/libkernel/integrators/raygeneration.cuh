@@ -42,5 +42,7 @@ __global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*    escapedRay
                                     SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
                                     SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkQueue);
 
+__global__ void postprocessing(vec4f* outputBuffer, int nItems);
+
 } // namespace kernel
 } // namespace colvillea

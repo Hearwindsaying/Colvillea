@@ -73,6 +73,9 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
         outputBuffer[jobId] = vec4f{0.f, 0.f, 0.f, 1.0f};
     }
 
+    // Apply sRGB to linear conversion after display.
+    outputBuffer[jobId] = convertsRGBToLinear(outputBuffer[jobId]);
+
     const int pixelIndex = jobId;
     vec2ui    pixelPosi  = pixelIndexToPixelPos(pixelIndex, width);
 
@@ -218,6 +221,17 @@ __global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*    escapedRay
     escapedRayQueue->resetQueueSize();
     evalMaterialsWorkQueue->resetQueueSize();
     evalShadowRayWorkQueue->resetQueueSize();
+}
+
+// TODO: Maybe this should move to app layer.
+__global__ void postprocessing(vec4f* outputBuffer, int nItems)
+{
+    int jobId = blockIdx.x * blockDim.x + threadIdx.x;
+    if (jobId >= nItems)
+        return;
+
+    // Apply gamma correction.
+    outputBuffer[jobId] = convertFromLinearTosRGB(outputBuffer[jobId]);
 }
 
 } // namespace kernel
