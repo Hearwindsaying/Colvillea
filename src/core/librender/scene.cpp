@@ -3,6 +3,7 @@
 #include <nodes/shapes/trianglemesh.h>
 #include <nodes/materials/diffusemtl.h>
 #include <nodes/emitters/directional.h>
+#include <nodes/emitters/hdridome.h>
 #include <nodes/textures/imagetex2d.h>
 #include <librender/scene.h>
 
@@ -34,6 +35,33 @@ std::shared_ptr<Emitter> Scene::createEmitter(kernel::EmitterType type,
                                                            colorMulIntensity,
                                                            sunDirection,
                                                            sunAngularRadius);
+            break;
+        case kernel::EmitterType::HDRIDome:
+            spdlog::critical("Incorrect emitter type!");
+            assert(false);
+            break;
+        default:
+            spdlog::critical("Unknown emitter type!");
+            assert(false);
+    }
+
+    this->addEmitter(emitter);
+
+    return emitter;
+}
+
+std::shared_ptr<Emitter> Scene::createEmitter(kernel::EmitterType             type,
+                                              const std::shared_ptr<Texture>& sky)
+{
+    std::shared_ptr<Emitter> emitter;
+    switch (type)
+    {
+        case kernel::EmitterType::HDRIDome:
+            emitter = std::make_shared<HDRIDome>(this, sky);
+            break;
+        case kernel::EmitterType::Directional:
+            spdlog::critical("Incorrect emitter type!");
+            assert(false);
             break;
         default:
             spdlog::critical("Unknown emitter type!");
@@ -277,18 +305,20 @@ std::optional<std::vector<kernel::Material>> Scene::compileMaterials() const
     return {};
 }
 
-std::optional<std::vector<kernel::Emitter>> Scene::compileEmitters() const
+std::optional<CompiledEmitterResult> Scene::compileEmitters() const
 {
     if (this->m_editActions.hasAction(SceneEditAction::EditActionType::AnyEmitterModification))
     {
         std::vector<kernel::Emitter> kernelEmitters;
         kernelEmitters.resize(this->m_emitters.size());
+        const kernel::Emitter* pDomeEmitterInKernelEmitters{nullptr};
 
         for (auto i = 0; i < this->m_emitters.size(); ++i)
         {
             const core::Emitter& coreEmitter = *this->m_emitters[i];
 
-            assert(coreEmitter.getEmitterType() == kernel::EmitterType::Directional);
+            assert(coreEmitter.getEmitterType() == kernel::EmitterType::Directional ||
+                   coreEmitter.getEmitterType() == kernel::EmitterType::HDRIDome);
             if (coreEmitter.getEmitterType() == kernel::EmitterType::Directional)
             {
                 const core::DirectionalEmitter* coreDirectionalEmitter = static_cast<const core::DirectionalEmitter*>(&coreEmitter);
@@ -301,9 +331,41 @@ std::optional<std::vector<kernel::Emitter>> Scene::compileEmitters() const
 
                 kernelEmitters[i] = kernelEmitter;
             }
+            else if (coreEmitter.getEmitterType() == kernel::EmitterType::HDRIDome)
+            {
+                const core::HDRIDome* coreDomeEmitter = static_cast<const core::HDRIDome*>(&coreEmitter);
+
+                // Query core texture.
+                const core::Texture* coreTextureBase = coreDomeEmitter->getEnvmap().get();
+
+                assert(coreTextureBase != nullptr);
+
+                // TODO: This has to be refactored.
+                assert(coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D);
+                if (coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D)
+                {
+                    // Cast to concrete texture type.
+                    const core::ImageTexture2D* coreImageTex2D = static_cast<const core::ImageTexture2D*>(coreTextureBase);
+
+                    // Query cuda texture object and compile kernel::ImageTexture2D.
+                    kernel::ImageTexture2D kernelImageTex2D{coreImageTex2D->getDeviceTextureObjectPtr()};
+
+                    // Compile kernel::Texture.
+                    kernel::Texture kernelTexture{kernelImageTex2D};
+
+                    // Compile kernel::HDRIDome.
+                    kernel::HDRIDome hdriDome{kernelTexture};
+
+                    kernel::Emitter kernelEmitter{hdriDome};
+
+                    kernelEmitters[i] = kernelEmitter;
+                    // Record this dome emitter.
+                    pDomeEmitterInKernelEmitters = &kernelEmitters[i];
+                }
+            }
         }
 
-        return std::make_optional(std::move(kernelEmitters));
+        return std::make_optional(CompiledEmitterResult{std::move(kernelEmitters), pDomeEmitterInKernelEmitters});
     }
 
     return {};

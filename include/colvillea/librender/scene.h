@@ -91,6 +91,15 @@ private:
     EditActionType m_editActions{EditActionType::None};
 };
 
+struct CompiledEmitterResult
+{
+    /// All compiled emitters, including HDRI ones.
+    std::vector<kernel::Emitter> emitters;
+
+    /// Compiled HDRIDome emitter referenced to \emitters.
+    const kernel::Emitter* domeEmitter{nullptr};
+};
+
 class Scene
 {
 public:
@@ -125,6 +134,9 @@ public:
                                            const vec3f&        colorMulIntensity,
                                            const vec3f&        sunDirection,
                                            const float         sunAngularRadius);
+
+    std::shared_ptr<Emitter> createEmitter(kernel::EmitterType             type,
+                                           const std::shared_ptr<Texture>& sky);
 
     /**
      * \brief
@@ -325,7 +337,7 @@ public:
 
     /// Compile scene emitters to the kernel-ready form. This is to be used
     /// by RenderEngine.
-    std::optional<std::vector<kernel::Emitter>> compileEmitters() const;
+    std::optional<CompiledEmitterResult> compileEmitters() const;
 
     void resetSceneEditActions()
     {

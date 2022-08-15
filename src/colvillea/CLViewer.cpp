@@ -636,8 +636,6 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
             ImGui::End();
         }
 
-
-
         // Rendering
         ImGui::Render();
         int display_w, display_h;

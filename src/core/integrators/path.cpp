@@ -64,10 +64,15 @@ void WavefrontPathTracingIntegrator::buildGeometryEntities(const std::vector<ker
     this->m_optixDevice->bindEntitiesBuffer(this->m_geometryEntitiesBuff->getDevicePtrAs<const kernel::Entity*>());
 }
 
-void WavefrontPathTracingIntegrator::buildEmitters(const std::vector<kernel::Emitter>& emitters)
+void WavefrontPathTracingIntegrator::buildEmitters(const std::vector<kernel::Emitter>& emitters, const kernel::Emitter* domeEmitter)
 {
     this->m_emittersBuff = std::make_unique<DeviceBuffer>(emitters.data(), sizeof(kernel::Emitter) * emitters.size());
-    this->m_numEmitters  = emitters.size();
+
+    // TODO: Refactor this: we should use rvalue references.
+    // We should copy the data since \domeEmitter is going to be destroyed (with \emitters).
+    //this->m_domeEmitter  = *domeEmitter;
+    this->m_domeEmitterBuff = std::make_unique<DeviceBuffer>(domeEmitter, sizeof(kernel::Emitter));
+    this->m_numEmitters     = emitters.size();
     /*this->m_cudaDevice->bindEmittersBuffer(this->m_emittersBuff->getDevicePtrAs<const kernel::Emitter*>());*/
 }
 
@@ -108,12 +113,14 @@ void WavefrontPathTracingIntegrator::render()
     this->m_optixDevice->launchTracePrimaryRayKernel(workItems, this->m_iterationIndex, this->m_width);
 
     // Handling missed rays.
-    this->m_cudaDevice->launchEvaluateEscapedRaysKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
-                                                        this->m_queueCapacity,
+    assert(this->m_domeEmitterBuff != nullptr);
+    this->m_cudaDevice->launchEvaluateEscapedRaysKernel(this->m_queueCapacity,
+                                                        this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
                                                         this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
                                                         this->m_iterationIndex,
                                                         this->m_width,
-                                                        this->m_height);
+                                                        this->m_height,
+                                                        this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>());
 
     // Evaluate materials and lights.
     this->m_cudaDevice->launchEvaluateMaterialsAndLightsKernel(this->m_queueCapacity,

@@ -14,7 +14,10 @@ ImageTexture2D::ImageTexture2D(Scene* pScene, const Image& image) :
         case ImageTextureChannelFormat::RGBAU8:
             this->m_channelFormatCUDA = cudaCreateChannelDesc<uchar4>();
             break;
+        // Note that cuda does not support float3 textures, so we allocate
+        // extra paddings to let it become RGBA32F texture.
         case ImageTextureChannelFormat::RGBA32F:
+        /*case ImageTextureChannelFormat::RGB32F:*/
             this->m_channelFormatCUDA = cudaCreateChannelDesc<float4>();
             break;
         default:

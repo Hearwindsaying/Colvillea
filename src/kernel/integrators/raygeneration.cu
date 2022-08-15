@@ -93,7 +93,8 @@ __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQue
                                     vec4f*                         outputBuffer,
                                     uint32_t                       iterationIndex,
                                     uint32_t                       width,
-                                    uint32_t                       height)
+                                    uint32_t                       height,
+                                    const Emitter*                 hdriDome)
 {
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
     /*printf("Evaluate escaped rays jobId:%d queueSize:%d\n", jobId, escapedRayQueue->size());*/
@@ -102,12 +103,13 @@ __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQue
 
     const RayEscapedWork& escapedRayWork = escapedRayQueue->getWorkSOA().getVar(jobId);
 
-    vec2ui pixelPosi{escapedRayWork.pixelIndex % width, escapedRayWork.pixelIndex / width};
-    int    pattern = (pixelPosi.x / 8) ^ (pixelPosi.y / 8);
+    assert(hdriDome != nullptr);
 
-    vec3f color0{.8f, 0.f, 0.f};
-    vec3f color1{.8f, .8f, .8f};
-    vec3f currRadiance = (pattern & 1) ? color1 : color0;
+    vec2ui pixelPosi{escapedRayWork.pixelIndex % width, escapedRayWork.pixelIndex / width};
+    
+    /* TODO: Remove hack. Ray's origin does not matter anyway. */
+    vec3f currRadiance = hdriDome->evalEnvironment(Ray{vec3f{1.0f, 0.f, 0.f}, escapedRayWork.rayDirection});
+
     vec3f prevRadiance{outputBuffer[escapedRayWork.pixelIndex]};
     outputBuffer[escapedRayWork.pixelIndex] = accumulate_unbiased(currRadiance, prevRadiance, iterationIndex);
 }

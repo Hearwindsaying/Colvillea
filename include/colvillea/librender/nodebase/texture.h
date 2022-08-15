@@ -17,6 +17,9 @@ enum class ImageTextureChannelFormat : uint32_t
 {
     /// 32-bit floating format.
     RGBA32F,
+    
+    /// 32-bit floating format with 3 channels.
+    //RGB32F,
 
     /// 16-bit floating format.
     RGBA16F,
@@ -45,6 +48,12 @@ public:
         m_channelFormat{channelFormat}
     {}
 
+    /**
+     * \brief
+     *    Getting row pitch size for the image.
+     * 
+     * \return 
+     */
     size_t getPitchSizeInBytes() const noexcept
     {
         static_assert(this->m_paddingSupport == false, "Fix this.");
@@ -52,6 +61,8 @@ public:
         {
             case ImageTextureChannelFormat::RGBA32F:
                 return this->m_resolution.x * sizeof(float) * 4;
+            /*case ImageTextureChannelFormat::RGB32F:
+                return this->m_resolution.x * sizeof(float) * 3;*/
             case ImageTextureChannelFormat::RGBA16F:
                 // Half type?
                 return this->m_resolution.x * (sizeof(float) / 2) * 4;
@@ -69,6 +80,7 @@ public:
         switch (this->m_channelFormat)
         {
             case ImageTextureChannelFormat::RGBA32F:
+            /*case ImageTextureChannelFormat::RGB32F:*/
                 return sizeof(float);
             case ImageTextureChannelFormat::RGBA16F:
                 // Half type?
@@ -90,6 +102,8 @@ public:
             case ImageTextureChannelFormat::RGBA16F:
             case ImageTextureChannelFormat::RGBAU8:
                 return 4;
+//             case ImageTextureChannelFormat::RGB32F:
+//                 return 3;
             default:
                 spdlog::critical("Unknown image texture channel format!");
                 assert(false);

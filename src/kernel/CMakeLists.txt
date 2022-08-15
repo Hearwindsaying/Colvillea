@@ -35,6 +35,7 @@ set(INTERFACE_MATERIALS
 
 set(INTERFACE_EMITTERS
     ${KERNEL_INCLUDE_DIR}/libkernel/emitters/directional.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/emitters/hdridome.h
 )
 
 set(INTERFACE_TEXTURES

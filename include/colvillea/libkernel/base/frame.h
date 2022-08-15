@@ -125,5 +125,6 @@ struct Frame
                                         clamp(v.x * v.x / sin2ThetaVal, 0.0f, 1.0f);
     }
 };
+
 } // namespace kernel
 } // namespace colvillea

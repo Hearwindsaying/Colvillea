@@ -33,7 +33,17 @@ public:
 
     virtual void buildGeometryEntities(const std::vector<kernel::Entity>& entities) override;
 
-    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters) override;
+    /**
+     * \brief.
+     *    Build emitters.
+     * 
+     * \remark
+     *    Note that for build***() APIs, incoming kernel data structures are short-lived.
+     * 
+     * \param emitters
+     * \param domeEmitter
+     */
+    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters, const kernel::Emitter* domeEmitter) override;
 
     virtual void render() override;
 
@@ -77,11 +87,14 @@ protected:
 
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalMaterialsWork>> m_evalMaterialsWorkQueueBuff;
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>> m_evalShadowRayWorkQueueBuff;
-    SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>  m_rayEscapedWorkQueueBuff;
+    SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>    m_rayEscapedWorkQueueBuff;
 
     std::unique_ptr<DeviceBuffer> m_geometryEntitiesBuff;
     std::unique_ptr<DeviceBuffer> m_materialsBuff;
     std::unique_ptr<DeviceBuffer> m_emittersBuff;
+    std::unique_ptr<DeviceBuffer> m_domeEmitterBuff; // TODO: Duplicate data, refactor this.
+    //kernel::Emitter               m_domeEmitter; // Note that we should keep a value type instead of pointer.
+                                                 // m_**Buff all contains their own copies.
     uint32_t                      m_numEmitters{0};
 
 private:

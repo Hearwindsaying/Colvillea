@@ -234,7 +234,7 @@ OPTIX_MISS_PROGRAM(primaryRay)
     assert(pixelIndex == jobId);
 
     assert(optixLaunchParams.rayEscapedWorkQueue != nullptr);
-    optixLaunchParams.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{pixelIndex});
+    optixLaunchParams.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{optixGetWorldRayDirection(), pixelIndex});
 }
 
 OPTIX_MISS_PROGRAM(shadowRay)

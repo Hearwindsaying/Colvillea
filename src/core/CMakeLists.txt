@@ -25,6 +25,7 @@ set(INTERFACE_NODES_MATERIALS
 
 set(INTERFACE_NODES_EMITTERS
     ${CORE_INCLUDE_DIR}/nodes/emitters/directional.h
+    ${CORE_INCLUDE_DIR}/nodes/emitters/hdridome.h
 )
 
 set(INTERFACE_NODES_TEXTURES
@@ -79,6 +80,7 @@ set(SOURCE_NODES_MATERIALS
 
 set(SOURCE_NODES_EMITTERS
     nodes/emitters/directional.cpp
+    nodes/emitters/hdridome.cpp
 )
 
 set(SOURCE_NODES_TEXTURES

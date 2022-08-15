@@ -89,7 +89,7 @@ void RenderEngine::compileEmitters()
     auto emittersCompileSource = this->m_scene->compileEmitters();
     if (emittersCompileSource)
     {
-        this->m_integrator->buildEmitters(*emittersCompileSource);
+        this->m_integrator->buildEmitters((*emittersCompileSource).emitters, (*emittersCompileSource).domeEmitter);
         this->m_integrator->resetIterationIndex();
     }
 }

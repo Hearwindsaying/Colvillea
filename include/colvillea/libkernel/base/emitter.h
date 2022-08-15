@@ -7,6 +7,7 @@
 #include "device_launch_parameters.h"
 
 #include <libkernel/emitters/directional.h>
+#include <libkernel/emitters/hdridome.h>
 
 namespace colvillea
 {
@@ -14,8 +15,13 @@ namespace kernel
 {
 enum class EmitterType : uint32_t
 {
+    /// Directional Sun emitter.
     Directional,
 
+    /// Infinite environment map emitter.
+    HDRIDome,
+
+    /// Unknown emitter.
     Unknown
 };
 
@@ -23,7 +29,7 @@ enum class EmitterType : uint32_t
  * \brief
  *    Light source in the scene.
  */
-class Emitter
+class Emitter final
 {
 public:
     /*CL_CPU_GPU CL_INLINE*/ Emitter() :
@@ -34,14 +40,26 @@ public:
     {
     }
 
+    CL_CPU_GPU CL_INLINE Emitter(const HDRIDome& emitter) :
+        m_domeEmitter{emitter}, m_emitterType{EmitterType::HDRIDome}
+    {
+    }
+
+    CL_CPU_GPU CL_INLINE EmitterType getEmitterType() const noexcept
+    {
+        return this->m_emitterType;
+    }
+
     CL_CPU_GPU Emitter& operator=(const Emitter& emitter)
     {
         this->m_emitterType = emitter.m_emitterType;
-        assert(this->m_emitterType == EmitterType::Directional);
         switch (emitter.m_emitterType)
         {
             case EmitterType::Directional:
                 this->m_directionalEmitter = emitter.m_directionalEmitter;
+                break;
+            case EmitterType::HDRIDome:
+                this->m_domeEmitter = emitter.m_domeEmitter;
                 break;
             default:
                 assert(false);
@@ -57,6 +75,8 @@ public:
         {
             case EmitterType::Directional:
                 return this->m_directionalEmitter.sampleDirect(pDirectRec, sample);
+            case EmitterType::HDRIDome:
+                return this->m_domeEmitter.sampleDirect(pDirectRec, sample);
             default:
                 assert(false);
                 return vec3f{0.0f};
@@ -70,11 +90,29 @@ public:
         {
             case EmitterType::Directional:
                 return this->m_directionalEmitter.pdfDirect(dRec);
+            case EmitterType::HDRIDome:
+                return this->m_domeEmitter.pdfDirect(dRec);
             default:
                 assert(false);
                 return 0.0f;
         }
     }
+
+#ifdef __CUDACC__
+    CL_GPU
+    vec3f evalEnvironment(const Ray& ray) const
+    {
+        assert(this->m_emitterType == EmitterType::HDRIDome);
+        switch (this->m_emitterType)
+        {
+            case EmitterType::HDRIDome:
+                return this->m_domeEmitter.evalEnvironment(ray);
+            default:
+                assert(false);
+                return 0.0f;
+        }
+    }
+#endif
 
 private:
     /// Tagged Union implementation.
@@ -83,6 +121,7 @@ private:
     union
     {
         DirectionalEmitter m_directionalEmitter;
+        HDRIDome           m_domeEmitter;
     };
 };
 

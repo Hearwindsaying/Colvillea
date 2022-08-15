@@ -30,7 +30,8 @@ __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQue
                                     vec4f*                         outputBuffer,
                                     uint32_t                       iterationIndex,
                                     uint32_t                       width,
-                                    uint32_t                       height);
+                                    uint32_t                       height,
+                                    const Emitter*                 hdriDome);
 
 __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
                                            const Emitter*                    emitters,

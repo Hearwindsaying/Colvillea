@@ -11,7 +11,7 @@ namespace colvillea
 {
 namespace kernel
 {
-class DirectionalEmitter /* : public Emitter*/
+class DirectionalEmitter
 {
 public:
     /*CL_CPU_GPU*/ DirectionalEmitter() = default;

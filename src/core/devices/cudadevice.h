@@ -25,7 +25,7 @@ class CUDADevice : public Device
 {
 public:
     CUDADevice() :
-        Device{"CUDADevice", DeviceType::CUDADevice} { }
+        Device{"CUDADevice", DeviceType::CUDADevice} {}
 
     void launchShowImageKernel(int nItems, kernel::Texture texture, uint32_t width, uint32_t height, vec4f* outputBuffer)
     {
@@ -45,10 +45,16 @@ public:
      * \brief
      *    Launch evaluate escaped rays kernel.
      */
-    void launchEvaluateEscapedRaysKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>* escapedRayQueue, int nItems, kernel::vec4f* outputBuffer, uint32_t width, uint32_t height, uint32_t iterationIndex)
+    void launchEvaluateEscapedRaysKernel(int                                            nItems,
+                                         kernel::SOAProxyQueue<kernel::RayEscapedWork>* escapedRayQueue,
+                                         vec4f*                                         outputBuffer,
+                                         uint32_t                                       iterationIndex,
+                                         uint32_t                                       width,
+                                         uint32_t                                       height,
+                                         const kernel::Emitter*                         hdriDome)
     {
-        assert(escapedRayQueue != nullptr && outputBuffer != nullptr);
-        this->launchKernelSync(&kernel::evaluateEscapedRays, nItems, escapedRayQueue, outputBuffer, width, height, iterationIndex);
+        assert(escapedRayQueue != nullptr && outputBuffer != nullptr && hdriDome != nullptr);
+        this->launchKernelSync(&kernel::evaluateEscapedRays, nItems, escapedRayQueue, outputBuffer, iterationIndex, width, height, hdriDome);
     }
 
     /**
