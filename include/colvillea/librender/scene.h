@@ -98,6 +98,8 @@ struct CompiledEmitterResult
 
     /// Compiled HDRIDome emitter referenced to \emitters.
     const kernel::Emitter* domeEmitter{nullptr};
+
+    vec2ui domeEmitterTexResolution{};
 };
 
 class Scene

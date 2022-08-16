@@ -30,7 +30,14 @@ public:
         return this->m_cudaTextureObj;
     }
 
+    virtual const vec2ui& getTextureResolution() const noexcept
+    {
+        return this->m_imageResolution;
+    }
+
 private:
+    vec2ui m_imageResolution{0};
+
     cudaChannelFormatDesc m_channelFormatCUDA{};
 
     cudaArray_t m_cuArray{nullptr};

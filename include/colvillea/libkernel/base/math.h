@@ -52,6 +52,29 @@ CL_CPU_GPU CL_INLINE float length(const vec2f& x)
     return owl::common::polymorphic::sqrt(owl::dot(x, x));
 }
 
+/**
+ * \brief.
+ *    std::upper_bound() reimplementation for kernel code.
+ * 
+ * \param cbegin
+ * \param cend
+ * \param value
+ * \return 
+ */
+template <typename Iterator, typename ValueType>
+CL_CPU_GPU CL_INLINE
+    Iterator
+    upper_bound(Iterator begin, Iterator end, ValueType value)
+{
+    while (begin < end)
+    {
+        Iterator middle = begin + (end - begin) / 2;
+        *middle <= value ? (begin = middle + 1) : (end = middle);
+    }
+
+    return begin;
+}
+
 CL_CPU_GPU CL_INLINE vec4f accumulate_unbiased(const vec3f& currRadiance, const vec3f& prevRadiance, uint32_t N)
 {
     return vec4f{(static_cast<float>(N) * prevRadiance + currRadiance) / (N + 1), 1.0f};
@@ -71,10 +94,10 @@ CL_CPU_GPU CL_INLINE vec4f accumulate_unbiased(const vec3f& currRadiance, const 
 CL_CPU_GPU CL_INLINE vec4f convertFromLinearTosRGB(const vec4f& src)
 {
     vec4f dst = src;
-    dst.x      = (dst.x < 0.0031308f) ? dst.x * 12.92f : (1.055f * powf(dst.x, 0.41666f) - 0.055f);
-    dst.y      = (dst.y < 0.0031308f) ? dst.y * 12.92f : (1.055f * powf(dst.y, 0.41666f) - 0.055f);
-    dst.z      = (dst.z < 0.0031308f) ? dst.z * 12.92f : (1.055f * powf(dst.z, 0.41666f) - 0.055f);
-    dst.w      = 1.0f;
+    dst.x     = (dst.x < 0.0031308f) ? dst.x * 12.92f : (1.055f * powf(dst.x, 0.41666f) - 0.055f);
+    dst.y     = (dst.y < 0.0031308f) ? dst.y * 12.92f : (1.055f * powf(dst.y, 0.41666f) - 0.055f);
+    dst.z     = (dst.z < 0.0031308f) ? dst.z * 12.92f : (1.055f * powf(dst.z, 0.41666f) - 0.055f);
+    dst.w     = 1.0f;
     return dst;
 }
 
@@ -107,6 +130,11 @@ CL_CPU_GPU CL_INLINE float convertsRGBToLinear(const float& src)
 CL_CPU_GPU CL_INLINE vec4f convertsRGBToLinear(const vec4f& src)
 {
     return vec4f(convertsRGBToLinear(src.x), convertsRGBToLinear(src.y), convertsRGBToLinear(src.z), 1.f);
+}
+
+CL_CPU_GPU CL_INLINE float linearToLuminance(const vec3f& src)
+{
+    return src.x * 0.212671 + src.y * 0.71516 + src.z * 0.072169;
 }
 
 } // namespace kernel

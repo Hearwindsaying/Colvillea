@@ -45,7 +45,9 @@ public:
 
     virtual void buildGeometryEntities(const std::vector<kernel::Entity>& entities) = 0;
 
-    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters, const kernel::Emitter* domeEmitter) = 0;
+    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters,
+                               const kernel::Emitter*              domeEmitter,
+                               const vec2ui&                       domeEmitterTextureResolution) = 0;
 
     /// Render the scene.
     virtual void render() = 0;

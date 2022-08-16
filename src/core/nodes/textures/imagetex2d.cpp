@@ -26,11 +26,11 @@ ImageTexture2D::ImageTexture2D(Scene* pScene, const Image& image) :
     }
 
     // Allocate CUDA array in device memory.
-    const vec2ui resolution = image.getResolution();
+    this->m_imageResolution = image.getResolution();
     CHECK_CUDA_CALL(cudaMallocArray(&this->m_cuArray,
                                     &this->m_channelFormatCUDA,
-                                    resolution.x,
-                                    resolution.y));
+                                    this->m_imageResolution.x,
+                                    this->m_imageResolution.y));
 
     // Upload data from host to device.
     const size_t srcPitch = image.getPitchSizeInBytes();
@@ -39,8 +39,8 @@ ImageTexture2D::ImageTexture2D(Scene* pScene, const Image& image) :
                                         0,
                                         image.getImageData(),
                                         srcPitch /* pitch should be in bytes. */,
-                                        resolution.x * image.getComponentSizeInBytes() * image.getNumComponents() /* width (accounting for components) should be in bytes. */,
-                                        resolution.y /* height should be in **elements**! */,
+                                        this->m_imageResolution.x * image.getComponentSizeInBytes() * image.getNumComponents() /* width (accounting for components) should be in bytes. */,
+                                        this->m_imageResolution.y /* height should be in **elements**! */,
                                         cudaMemcpyKind::cudaMemcpyDefault));
 
     // Specify texture data.

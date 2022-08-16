@@ -89,6 +89,30 @@ public:
                                outputBuffer, nItems);
     }
 
+    void launchHDRIPreprocessingKernels(kernel::Emitter* emitter,
+                                        uint32_t         domeTexWidth,
+                                        uint32_t         domeTexHeight)
+    {
+        assert(emitter != nullptr);
+        
+        dim3 blockSize{8, 8, 1}; // Parentheses to avoid narrowing conversion errors.
+        dim3 gridSize(std::ceil((domeTexWidth + 1) / static_cast<float>(blockSize.x)), std::ceil(domeTexHeight / blockSize.y), 1);
+
+        kernel::prefilteringHDRIDome<<<gridSize, blockSize>>>(emitter, domeTexWidth, domeTexHeight);
+        CHECK_CUDA_CALL(cudaStreamSynchronize(0));
+
+        blockSize = dim3{1, 8, 1};
+        gridSize  = dim3(1, std::ceil(domeTexHeight / static_cast<float>(blockSize.y)), 1);
+
+        kernel::preprocessPCondV<<<gridSize, blockSize>>>(emitter, domeTexWidth, domeTexHeight);
+        CHECK_CUDA_CALL(cudaStreamSynchronize(0));
+
+        blockSize = dim3{8, 1, 1};
+        gridSize  = dim3(std::ceil((domeTexHeight + 1) / static_cast<float>(blockSize.x)), 1, 1);
+        kernel::preprocessPV<<<gridSize, blockSize>>>(emitter, domeTexWidth, domeTexHeight);
+        CHECK_CUDA_CALL(cudaStreamSynchronize(0));
+    }
+
 
 protected:
     /**

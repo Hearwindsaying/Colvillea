@@ -64,7 +64,9 @@ void WavefrontPathTracingIntegrator::buildGeometryEntities(const std::vector<ker
     this->m_optixDevice->bindEntitiesBuffer(this->m_geometryEntitiesBuff->getDevicePtrAs<const kernel::Entity*>());
 }
 
-void WavefrontPathTracingIntegrator::buildEmitters(const std::vector<kernel::Emitter>& emitters, const kernel::Emitter* domeEmitter)
+void WavefrontPathTracingIntegrator::buildEmitters(const std::vector<kernel::Emitter>& emitters,
+                                                   const kernel::Emitter*              domeEmitter,
+                                                   const vec2ui&                       domeEmitterTextureResolution)
 {
     this->m_emittersBuff = std::make_unique<DeviceBuffer>(emitters.data(), sizeof(kernel::Emitter) * emitters.size());
 
@@ -74,6 +76,11 @@ void WavefrontPathTracingIntegrator::buildEmitters(const std::vector<kernel::Emi
     this->m_domeEmitterBuff = std::make_unique<DeviceBuffer>(domeEmitter, sizeof(kernel::Emitter));
     this->m_numEmitters     = emitters.size();
     /*this->m_cudaDevice->bindEmittersBuffer(this->m_emittersBuff->getDevicePtrAs<const kernel::Emitter*>());*/
+
+    // Launch HDRIDome emitter preprocessing.
+    this->m_cudaDevice->launchHDRIPreprocessingKernels(this->m_domeEmitterBuff->getDevicePtrAs<kernel::Emitter*>(),
+                                                       domeEmitterTextureResolution.x,
+                                                       domeEmitterTextureResolution.y);
 }
 
 void WavefrontPathTracingIntegrator::render()

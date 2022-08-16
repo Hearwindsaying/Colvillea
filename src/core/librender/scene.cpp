@@ -312,6 +312,7 @@ std::optional<CompiledEmitterResult> Scene::compileEmitters() const
         std::vector<kernel::Emitter> kernelEmitters;
         kernelEmitters.resize(this->m_emitters.size());
         const kernel::Emitter* pDomeEmitterInKernelEmitters{nullptr};
+        vec2ui                 domeEmitterTexResolution{};
 
         for (auto i = 0; i < this->m_emitters.size(); ++i)
         {
@@ -340,6 +341,9 @@ std::optional<CompiledEmitterResult> Scene::compileEmitters() const
 
                 assert(coreTextureBase != nullptr);
 
+                // Query texture size.
+                domeEmitterTexResolution = coreTextureBase->getTextureResolution();
+
                 // TODO: This has to be refactored.
                 assert(coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D);
                 if (coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D)
@@ -354,7 +358,12 @@ std::optional<CompiledEmitterResult> Scene::compileEmitters() const
                     kernel::Texture kernelTexture{kernelImageTex2D};
 
                     // Compile kernel::HDRIDome.
-                    kernel::HDRIDome hdriDome{kernelTexture};
+                    kernel::HDRIDome hdriDome{kernelTexture,
+                                              domeEmitterTexResolution,
+                                              coreDomeEmitter->getUcondVDevicePtr(),
+                                              coreDomeEmitter->getCDFpUcondVDevicePtr(),
+                                              coreDomeEmitter->getpVDevicePtr(),
+                                              coreDomeEmitter->getCDFpVDevicePtr()};
 
                     kernel::Emitter kernelEmitter{hdriDome};
 
@@ -365,7 +374,7 @@ std::optional<CompiledEmitterResult> Scene::compileEmitters() const
             }
         }
 
-        return std::make_optional(CompiledEmitterResult{std::move(kernelEmitters), pDomeEmitterInKernelEmitters});
+        return std::make_optional(CompiledEmitterResult{std::move(kernelEmitters), pDomeEmitterInKernelEmitters, domeEmitterTexResolution});
     }
 
     return {};

@@ -68,7 +68,8 @@ public:
         return *this;
     }
 
-    CL_CPU_GPU
+#ifdef __CUDACC__
+    CL_GPU
     vec3f sampleDirect(DirectSamplingRecord* pDirectRec, const vec2f& sample) const
     {
         switch (this->m_emitterType)
@@ -82,6 +83,7 @@ public:
                 return vec3f{0.0f};
         }
     }
+#endif
 
     CL_CPU_GPU
     float pdfDirect(const DirectSamplingRecord& dRec) const
@@ -114,6 +116,26 @@ public:
     }
 #endif
 
+    template <typename T>
+    CL_CPU_GPU CL_INLINE const T& asTypeConst() const;
+
+    template <typename T>
+    CL_CPU_GPU CL_INLINE T& asType();
+
+    template <>
+    CL_CPU_GPU CL_INLINE const HDRIDome& asTypeConst() const
+    {
+        assert(this->m_emitterType == EmitterType::HDRIDome);
+        return this->m_domeEmitter;
+    }
+
+    template <>
+    CL_CPU_GPU CL_INLINE HDRIDome& asType()
+    {
+        assert(this->m_emitterType == EmitterType::HDRIDome);
+        return this->m_domeEmitter;
+    }
+
 private:
     /// Tagged Union implementation.
     EmitterType m_emitterType{EmitterType::Unknown};
@@ -132,6 +154,7 @@ private:
 class LightSampler
 {
 public:
+#ifdef __CUDACC__
     /**
      * \brief
      *    Sample an emitter in the scene and write to the 
@@ -142,10 +165,10 @@ public:
      * \param sample
      *    Uniform 2D sample for emitter sampling.
      */
-    CL_CPU_GPU static vec3f sampleEmitterDirect(const Emitter*        emitters,
-                                                uint32_t              numEmitters,
-                                                DirectSamplingRecord* dRec,
-                                                const vec2f&          sample)
+    CL_GPU static vec3f sampleEmitterDirect(const Emitter*        emitters,
+                                            uint32_t              numEmitters,
+                                            DirectSamplingRecord* dRec,
+                                            const vec2f&          sample)
     {
         assert(emitters != nullptr && dRec != nullptr);
 
@@ -177,6 +200,7 @@ public:
             return value;
         }
     }
+#endif
 };
 
 } // namespace kernel

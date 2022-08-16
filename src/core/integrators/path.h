@@ -43,7 +43,9 @@ public:
      * \param emitters
      * \param domeEmitter
      */
-    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters, const kernel::Emitter* domeEmitter) override;
+    virtual void buildEmitters(const std::vector<kernel::Emitter>& emitters,
+                               const kernel::Emitter*              domeEmitter,
+                               const vec2ui&                       domeEmitterTextureResolution) override;
 
     virtual void render() override;
 
@@ -94,8 +96,8 @@ protected:
     std::unique_ptr<DeviceBuffer> m_emittersBuff;
     std::unique_ptr<DeviceBuffer> m_domeEmitterBuff; // TODO: Duplicate data, refactor this.
     //kernel::Emitter               m_domeEmitter; // Note that we should keep a value type instead of pointer.
-                                                 // m_**Buff all contains their own copies.
-    uint32_t                      m_numEmitters{0};
+    // m_**Buff all contains their own copies.
+    uint32_t m_numEmitters{0};
 
 private:
     //ManagedDeviceBuffer m_outputBuff;

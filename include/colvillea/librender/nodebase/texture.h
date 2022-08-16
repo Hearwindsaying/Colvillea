@@ -152,6 +152,8 @@ public:
         return this->m_textureType;
     }
 
+    virtual const vec2ui& getTextureResolution() const noexcept = 0;
+
     virtual ~Texture() = 0;
 
 private:

@@ -44,5 +44,17 @@ __global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*    escapedRay
 
 __global__ void postprocessing(vec4f* outputBuffer, int nItems);
 
+__global__ void prefilteringHDRIDome(Emitter* emitter,
+                                     uint32_t domeTexWidth,
+                                     uint32_t domeTexHeight);
+
+__global__ void preprocessPCondV(Emitter* emitter,
+                                 uint32_t domeTexWidth,
+                                 uint32_t domeTexHeight);
+
+__global__ void preprocessPV(Emitter* emitter,
+                             uint32_t domeTexWidth,
+                             uint32_t domeTexHeight);
+
 } // namespace kernel
 } // namespace colvillea

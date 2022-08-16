@@ -62,5 +62,8 @@ CL_CPU_GPU CL_INLINE float MISWeightBalanced(const float pdfX, const float pdfY)
 {
     return pdfX / (pdfX + pdfY);
 }
+
+
+
 } // namespace kernel
 } // namespace colvillea

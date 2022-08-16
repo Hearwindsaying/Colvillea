@@ -46,16 +46,16 @@ int main(int argc, char* argv[])
     //auto texture = delegate::ImageUtils::loadTest2x2Image();
     auto texture = pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, image);
 
-    std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMaterial(core::MaterialType::Diffuse, texture);
+    std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMaterial(core::MaterialType::Diffuse, /*texture*/ vec3f{0.75f});
 
     for (const auto& triMesh : objMeshes)
     {
         pSceneViewer->createEntity(triMesh, pMaterial);
     }
 
-    pSceneViewer->createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
+    //pSceneViewer->createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
 
-    auto skyImg = delegate::ImageUtils::loadImageFromDisk(dir / "venice_sunset_2k.hdr");
+    auto skyImg = delegate::ImageUtils::loadImageFromDisk(dir / "the_sky_is_on_fire_2k.hdr");
     auto skyTex = pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, skyImg);
     pSceneViewer->createEmitter(kernel::EmitterType::HDRIDome, skyTex);
 

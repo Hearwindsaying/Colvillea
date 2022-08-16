@@ -180,7 +180,7 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
             float bsdfPdf   = enableMIS ? bsdf.pdf(bsdfSamplingRecord) : 0.0f;
             float weight    = MISWeightBalanced(dRec.pdf /* / numEmitters*/ /* Brute force sampling. TODO: Remove this and add to sampler. */, bsdfPdf);
 
-            Li += bsdfVal * Frame::cosTheta(bsdfSamplingRecord.wiLocal) * weight / dRec.pdf;
+            Li += value * bsdfVal * Frame::cosTheta(bsdfSamplingRecord.wiLocal) * weight / dRec.pdf;
 
             //printf("Li %f bsdfVal %f cosTheat %f weight %f dRec.pdf %f\n",
             //       Li.x, bsdfVal.x, Frame::cosTheta(bsdfSamplingRecord.wiLocal), weight, dRec.pdf);
@@ -189,6 +189,7 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
             shadowRay.mint = 0.001f;
             // Enqueue shadow ray after computing tentative radiance contribution.
             int entry = evalShadowRayWorkQueue->pushWorkItem(EvalShadowRayWork{shadowRay, Li, evalMtlsWork.pixelIndex});
+            /*int entry = evalShadowRayWorkQueue->pushWorkItem(EvalShadowRayWork{shadowRay, value, evalMtlsWork.pixelIndex});*/
 
             /*vec3f retrievedLo = evalShadowRayWorkQueue->getWorkSOA().getVar(entry).Lo;
             printf("li old: %f %f %f li from queue reading: %f %f %f\n", 

@@ -61,6 +61,10 @@ set(SOURCE_BSDFS
     bsdfs/smoothdiffuse.cpp
 )
 
+set(SOURCE_EMITTERS
+    emitters/hdridome.cu
+)
+
 set(SOURCE_MATERIALS
     materials/diffusemtl.cpp
 )
@@ -81,6 +85,7 @@ STATIC
     ${SOURCE_INTEGRATORS}
     ${SOURCE_BASE}
     ${SOURCE_BSDFS}
+    ${SOURCE_EMITTERS}
     ${SOURCE_MATERIALS}
     ${SOURCE_TEXTURES}
 )
@@ -89,6 +94,7 @@ set_source_files_properties(
     ${SOURCE_INTEGRATORS}
     ${SOURCE_BASE}
     ${SOURCE_BSDFS}
+    ${SOURCE_EMITTERS}
     ${SOURCE_MATERIALS}
     ${SOURCE_TEXTURES}
 
@@ -121,6 +127,7 @@ source_group("interface/textures" FILES ${INTERFACE_TEXTURES})
 source_group("source/integrators" FILES ${SOURCE_INTEGRATORS})
 source_group("source/base" FILES ${SOURCE_BASE})
 source_group("source/bsdfs" FILES ${SOURCE_BSDFS})
+source_group("source/emitters" FILES ${SOURCE_EMITTERS})
 source_group("source/materials" FILES ${SOURCE_MATERIALS})
 source_group("source/textures" FILES ${SOURCE_TEXTURES})
 
