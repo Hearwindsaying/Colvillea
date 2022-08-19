@@ -36,7 +36,10 @@ private:
 private:
     __device__ int allocateEntry()
     {
+        if (this->queueSize >= queueCapacity)
+            printf("queueSize:%u, capacity:%u\n", this->queueSize, this->queueCapacity);
         assert(this->queueSize < queueCapacity);
+        
 
         // fetch_add returns the old value.
         //return this->queueSize.fetch_add(1, cuda::std::memory_order_relaxed);

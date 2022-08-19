@@ -264,6 +264,8 @@ public:
         // directionToUVCoords().
         vec2f uv{phi * -M_1_PIf * 0.5f + 0.5f, theta * M_1_PIf};
 
+        assert(dRec.measure == SamplingMeasure::SolidAngle);
+
         return dist2D.pdf2D(uv) / (2.0f * M_PIf * M_PIf * sinTheta);
 #endif // IMPORTANCE_SAMPLING
 

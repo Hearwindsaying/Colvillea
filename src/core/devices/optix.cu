@@ -18,6 +18,8 @@
 #    define __CUDACC__
 #endif
 
+#include <device_atomic_functions.h>
+
 #include "deviceCode.h"
 #include <optix_device.h>
 
@@ -32,6 +34,17 @@ namespace colvillea
 namespace kernel
 {
 extern "C" __constant__ LaunchParams optixLaunchParams{};
+
+//__device__ float atomicMul(float* address, float val)
+//{
+//    int* address_as_int = (int*)address;
+//    int  old            = *address_as_int, assumed;
+//    do {
+//        assumed = old;
+//        old     = atomicCAS(address_as_int, assumed, __float_as_int(val * __float_as_int(assumed)));
+//    } while (assumed != old);
+//    return __int_as_float(old);
+//}
 
 OPTIX_RAYGEN_PROGRAM(primaryRay)
 ()
@@ -237,6 +250,7 @@ OPTIX_MISS_PROGRAM(primaryRay)
     optixLaunchParams.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{optixGetWorldRayDirection(), pixelIndex});
 }
 
+
 OPTIX_MISS_PROGRAM(shadowRay)
 ()
 {
@@ -252,7 +266,21 @@ OPTIX_MISS_PROGRAM(shadowRay)
 
     vec3f currRadiance = evalShadowRayWork.Lo;
     vec3f prevRadiance{optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex]};
-    optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex] = accumulate_unbiased(currRadiance, prevRadiance, optixLaunchParams.iterationIndex);
+
+    vec4f newRadiance                                            = accumulate_unbiased(currRadiance, prevRadiance, optixLaunchParams.iterationIndex);
+    optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex] = newRadiance;
+
+    /*atomicExch(&optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex].x, newRadiance.x);
+    atomicExch(&optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex].y, newRadiance.y);
+    atomicExch(&optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex].z, newRadiance.z);*/
+
+    //#define ADD(c)                                                                                                                                                                 \
+//    atomicMul(&optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex].c, static_cast<float>(optixLaunchParams.iterationIndex) / (optixLaunchParams.iterationIndex + 1)); \
+//    atomicAdd(&optixLaunchParams.outputBuffer[evalShadowRayWork.pixelIndex].c, currRadiance.c / (optixLaunchParams.iterationIndex + 1));
+    //
+    //    ADD(x)
+    //    ADD(y)
+    //    ADD(z)
 }
 
 } // namespace kernel

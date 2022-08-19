@@ -14,11 +14,11 @@ struct BSDFSamplingRecord
 {
     /// We use pbrt's convention, wi is the outgoing ray direction in path tracing.
     /// wi resides in local shading space.
-    vec3f wiLocal;
+    vec3f wiLocal{0.f};
 
     /// We use pbrt's convention, wo is the incoming ray direction in path tracing.
     /// wo resides in local shading space.
-    vec3f woLocal;
+    vec3f woLocal{0.f};
 };
 
 enum class SamplingMeasure : uint32_t

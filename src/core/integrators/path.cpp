@@ -23,7 +23,8 @@ WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, u
     m_queueCapacity{static_cast<uint32_t>(width * height)},
     m_evalMaterialsWorkQueueBuff{m_queueCapacity},
     m_rayEscapedWorkQueueBuff{m_queueCapacity},
-    m_evalShadowRayWorkQueueBuff{m_queueCapacity}
+    m_evalShadowRayWorkMISBSDFQueueBuff{m_queueCapacity},
+    m_evalShadowRayWorkMISLightQueueBuff{m_queueCapacity}
 {
     std::unique_ptr<Device> pOptiXDevice = Device::createDevice(DeviceType::OptiXDevice);
     std::unique_ptr<Device> pCUDADevice  = Device::createDevice(DeviceType::CUDADevice);
@@ -134,17 +135,25 @@ void WavefrontPathTracingIntegrator::render()
                                                                this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
                                                                this->m_emittersBuff->getDevicePtrAs<const kernel::Emitter*>(),
                                                                this->m_numEmitters,
-                                                               this->m_evalShadowRayWorkQueueBuff.getDevicePtr());
+                                                               this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>(),
+                                                               this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
+                                                               this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
 
-    // Trace shadow rays.
+    // Trace shadow rays for MIS Light Sampling.
     this->m_optixDevice->launchTraceShadowRayKernel(this->m_queueCapacity,
                                                     this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
-                                                    this->m_evalShadowRayWorkQueueBuff.getDevicePtr());
+                                                    this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr());
+
+    // Trace shadow rays for MIS BSDF Sampling.
+    this->m_optixDevice->launchTraceShadowRayKernel(this->m_queueCapacity,
+                                                    this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                    this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
 
     // Reset Queues.
     this->m_cudaDevice->launchResetQueuesKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
                                                 this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
-                                                this->m_evalShadowRayWorkQueueBuff.getDevicePtr());
+                                                this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
+                                                this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
 
     // Post processing.
     this->m_cudaDevice->launchPostProcessingKernel(this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
@@ -173,11 +182,12 @@ void WavefrontPathTracingIntegrator::resize(uint32_t width, uint32_t height)
     this->m_outputBuff = std::make_unique<DeviceBuffer>(width * height * sizeof(kernel::vec4f));
 
     // Resize buffers.
-    this->m_queueCapacity              = width * height;
-    this->m_rayworkBuff                = std::make_unique<DeviceBuffer>(this->m_queueCapacity * kernel::SOAProxy<kernel::RayWork>::StructureSize);
-    this->m_evalMaterialsWorkQueueBuff = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalMaterialsWork>>(this->m_queueCapacity);
-    this->m_evalShadowRayWorkQueueBuff = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>>(this->m_queueCapacity);
-    this->m_rayEscapedWorkQueueBuff    = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>(this->m_queueCapacity);
+    this->m_queueCapacity                      = width * height;
+    this->m_rayworkBuff                        = std::make_unique<DeviceBuffer>(this->m_queueCapacity * kernel::SOAProxy<kernel::RayWork>::StructureSize);
+    this->m_evalMaterialsWorkQueueBuff         = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalMaterialsWork>>(this->m_queueCapacity);
+    this->m_evalShadowRayWorkMISBSDFQueueBuff  = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>>(this->m_queueCapacity);
+    this->m_evalShadowRayWorkMISLightQueueBuff = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>>(this->m_queueCapacity);
+    this->m_rayEscapedWorkQueueBuff            = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>(this->m_queueCapacity);
 }
 
 void WavefrontPathTracingIntegrator::unregisterFramebuffer()

@@ -65,21 +65,25 @@ public:
                                                 kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
                                                 const kernel::Emitter*                            emitters,
                                                 uint32_t                                          numEmitters,
-                                                kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueue)
+                                                const kernel::Emitter*                            domeEmitter,
+                                                kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
+                                                kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue)
     {
         assert(evalMaterialsWorkQueue != nullptr &&
                emitters != nullptr &&
-               evalShadowRayWorkQueue != nullptr);
+               evalShadowRayWorkMISLightQueue != nullptr &&
+               evalShadowRayWorkMISBSDFQueue != nullptr);
         this->launchKernelSync(&kernel::evaluateMaterialsAndLights, nItems,
-                               evalMaterialsWorkQueue, emitters, numEmitters, evalShadowRayWorkQueue);
+                               evalMaterialsWorkQueue, emitters, numEmitters, domeEmitter, evalShadowRayWorkMISLightQueue, evalShadowRayWorkMISBSDFQueue);
     }
 
     void launchResetQueuesKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>*    escapedRayQueue,
                                  kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
-                                 kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueue)
+                                 kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
+                                 kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue)
     {
-        assert(escapedRayQueue != nullptr && evalMaterialsWorkQueue != nullptr && evalShadowRayWorkQueue != nullptr);
-        this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalMaterialsWorkQueue, evalShadowRayWorkQueue);
+        assert(escapedRayQueue != nullptr && evalMaterialsWorkQueue != nullptr && evalShadowRayWorkMISLightQueue != nullptr && evalShadowRayWorkMISBSDFQueue != nullptr);
+        this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalMaterialsWorkQueue, evalShadowRayWorkMISLightQueue, evalShadowRayWorkMISBSDFQueue);
     }
 
     void launchPostProcessingKernel(vec4f* outputBuffer, int nItems)
@@ -94,7 +98,7 @@ public:
                                         uint32_t         domeTexHeight)
     {
         assert(emitter != nullptr);
-        
+
         dim3 blockSize{8, 8, 1}; // Parentheses to avoid narrowing conversion errors.
         dim3 gridSize(std::ceil((domeTexWidth + 1) / static_cast<float>(blockSize.x)), std::ceil(domeTexHeight / blockSize.y), 1);
 

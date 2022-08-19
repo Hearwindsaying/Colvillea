@@ -151,6 +151,16 @@ struct EvalShadowRayWork
 
     /// Index to pixel.
     int pixelIndex;
+
+    /// This is used to indicate whether different EvalShadowRayWork
+    /// could share the same pixelIndex value.
+    /// Think about MIS in direct lighting integrator, both light
+    /// sampling and BSDF sampling requires sending shadow ray (and
+    /// thus pushing EvalShadowRayWork to the queue) so they will 
+    /// have the same pixelIndex. If these ray work run in parallel,
+    /// there could be race conditions and one may expect using atomic
+    /// operations.
+    //int isPathSpilt;
 };
 
 template <>

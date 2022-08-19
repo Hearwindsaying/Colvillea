@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     /*pScene->addTriangleMeshes(std::move(objMeshes));
     pScene->addTriangleMesh(std::move(cubeMesh));*/
 
-    auto objMeshes = delegate::MeshImporter::loadMeshes(pSceneViewer, dir / "leftrightplane.obj");
+    auto objMeshes = delegate::MeshImporter::loadMeshes(pSceneViewer, dir / "cornell-box.obj");
     //std::shared_ptr<core::TriangleMesh> cubeMesh = delegate::MeshImporter::loadDefaultCube();
 
     auto image = delegate::ImageUtils::loadImageFromDisk(dir / "bamboo-wood-semigloss-albedo.tga");

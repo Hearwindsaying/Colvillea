@@ -36,11 +36,14 @@ __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQue
 __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
                                            const Emitter*                    emitters,
                                            uint32_t                          numEmitters,
-                                           SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkQueue);
+                                           const Emitter*                    domeEmitter,
+                                           SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
+                                           SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue);
 
 __global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*    escapedRayQueue,
                                     SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
-                                    SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkQueue);
+                                    SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
+                                    SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue);
 
 __global__ void postprocessing(vec4f* outputBuffer, int nItems);
 
