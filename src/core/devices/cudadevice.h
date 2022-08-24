@@ -60,9 +60,10 @@ public:
      * \brief
      *    Launch generate primary camera rays kernel.
      */
-    float launchGenerateCameraRaysKernel(kernel::SOAProxy<kernel::RayWork> rayworkBuff, int nItems, uint32_t width, uint32_t height, kernel::vec3f camera_pos, kernel::vec3f camera_d00, kernel::vec3f camera_ddu, kernel::vec3f camera_ddv, kernel::vec4f* outputBuffer, uint32_t iterationIndex)
+    float launchGenerateCameraRaysKernel(kernel::FixedSizeSOAProxyQueue<kernel::RayWork>* rayworkQueue, int nItems, uint32_t width, uint32_t height, kernel::vec3f camera_pos, kernel::vec3f camera_d00, kernel::vec3f camera_ddu, kernel::vec3f camera_ddv, kernel::vec4f* outputBuffer, uint32_t iterationIndex)
     {
-        return this->launchKernelSync(&kernel::generateCameraRays, nItems, rayworkBuff, nItems, width, height, camera_pos, camera_d00, camera_ddu, camera_ddv, outputBuffer, iterationIndex);
+        assert(rayworkQueue != nullptr && outputBuffer != nullptr);
+        return this->launchKernelSync(&kernel::generateCameraRays, nItems, rayworkQueue, nItems, width, height, camera_pos, camera_d00, camera_ddu, camera_ddv, outputBuffer, iterationIndex);
     }
 
     /**

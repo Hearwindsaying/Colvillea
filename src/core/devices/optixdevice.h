@@ -44,7 +44,7 @@ public:
     void buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes,
                              const std::vector</*const */ uint32_t>& instanceIDs);
 
-    void bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&                rayworkBufferSOA,
+    void bindRayWorkBuffer(kernel::FixedSizeSOAProxyQueue<kernel::RayWork>*        rayworkQueueDevicePtr,
                            const kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueueDevicePtr,
                            const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr);
 

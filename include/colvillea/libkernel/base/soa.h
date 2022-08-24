@@ -4,6 +4,8 @@
 #include <limits>
 #include <cassert>
 
+#include <libkernel/base/owldefs.h>
+
 #ifdef __INTELLISENSE__
 #    define __CUDACC__
 #endif
@@ -34,12 +36,12 @@ private:
     const uint32_t queueCapacity{0};
 
 private:
-    __device__ int allocateEntry()
+    CL_GPU int allocateEntry()
     {
         if (this->queueSize >= queueCapacity)
             printf("queueSize:%u, capacity:%u\n", this->queueSize, this->queueCapacity);
         assert(this->queueSize < queueCapacity);
-        
+
 
         // fetch_add returns the old value.
         //return this->queueSize.fetch_add(1, cuda::std::memory_order_relaxed);
@@ -47,12 +49,12 @@ private:
     }
 
 public:
-    __host__ SOAProxyQueue(const SOAProxy<WorkType>& workItemsSOA, const uint32_t capacity) :
+    CL_CPU SOAProxyQueue(const SOAProxy<WorkType>& workItemsSOA, const uint32_t capacity) :
         workSOA{workItemsSOA}, queueCapacity{capacity}
     {
     }
 
-    __device__ int pushWorkItem(const WorkType& work)
+    CL_GPU int pushWorkItem(const WorkType& work)
     {
         const int entry = this->allocateEntry();
         this->workSOA.setVar(entry, work);
@@ -60,12 +62,12 @@ public:
         return entry;
     }
 
-    __device__ const SOAProxy<WorkType>& getWorkSOA() const
+    CL_GPU const SOAProxy<WorkType>& getWorkSOA() const
     {
         return this->workSOA;
     }
 
-    __device__ int size() const
+    CL_GPU int size() const
     {
         //return this->queueSize.load(cuda::std::memory_order_relaxed);
         return this->queueSize;
@@ -75,10 +77,51 @@ public:
      * \brief
      *    Reset Queue size.
      */
-    __device__ void resetQueueSize()
+    CL_GPU void resetQueueSize()
     {
         this->queueSize = 0;
     }
 };
-}
+
+/*
+ * \brief
+ *    Fixed size SOAProxyQueue. Not safe for concurrent accessing.
+ */
+template <typename WorkType>
+class FixedSizeSOAProxyQueue
+{
+public:
+    /// Traits helper.
+    using SOAProxyType = SOAProxy<WorkType>;
+
+private:
+    /// SOA data.
+    SOAProxy<WorkType> workSOA;
+
+    const uint32_t queueSize{0};
+
+public:
+    CL_CPU FixedSizeSOAProxyQueue(const SOAProxy<WorkType>& workItemsSOA, const uint32_t size) :
+        workSOA{workItemsSOA}, queueSize{size}
+    {
+    }
+
+    CL_GPU void setWorkItem(int entry, const WorkType& work)
+    {
+        //assert(this->queueSize == this->workSOA.size)
+        this->workSOA.setVar(entry, work);
+    }
+
+    CL_GPU const SOAProxy<WorkType>& getWorkSOA() const
+    {
+        return this->workSOA;
+    }
+
+    CL_GPU int size() const
+    {
+        return this->queueSize;
+    }
+};
+
+} // namespace kernel
 } // namespace colvillea

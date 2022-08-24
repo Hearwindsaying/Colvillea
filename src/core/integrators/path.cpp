@@ -21,6 +21,7 @@ WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, u
     m_width{width},
     m_height{height},
     m_queueCapacity{static_cast<uint32_t>(width * height)},
+    m_rayworkFixedQueueBuff{m_queueCapacity},
     m_evalMaterialsWorkQueueBuff{m_queueCapacity},
     m_rayEscapedWorkQueueBuff{m_queueCapacity},
     m_evalShadowRayWorkMISBSDFQueueBuff{m_queueCapacity},
@@ -30,10 +31,6 @@ WavefrontPathTracingIntegrator::WavefrontPathTracingIntegrator(uint32_t width, u
     std::unique_ptr<Device> pCUDADevice  = Device::createDevice(DeviceType::CUDADevice);
     this->m_optixDevice.reset(static_cast<OptiXDevice*>(pOptiXDevice.release()));
     this->m_cudaDevice.reset(static_cast<CUDADevice*>(pCUDADevice.release()));
-
-    // Init rays buffer.
-    // TODO: Change sizeof(kernel::Ray) to helper traits.
-    this->m_rayworkBuff = std::make_unique<DeviceBuffer>(width * height * kernel::SOAProxy<kernel::RayWork>::StructureSize);
 
     // RGBA32F.
     this->m_outputBuff = std::make_unique<DeviceBuffer>(width * height * sizeof(kernel::vec4f));
@@ -95,8 +92,6 @@ void WavefrontPathTracingIntegrator::render()
     // Prepare RayWork SOA.
     int workItems = this->m_width * this->m_height;
 
-    kernel::SOAProxy<kernel::RayWork> rayworkSOA{const_cast<void*>(this->m_rayworkBuff->getDevicePtr()), static_cast<uint32_t>(workItems)};
-
     // Test.
     //this->m_cudaDevice->launchShowImageKernel(workItems, tex, this->m_width, this->m_height, this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>());
 
@@ -105,7 +100,7 @@ void WavefrontPathTracingIntegrator::render()
 #ifdef RAY_TRACING_DEBUGGING
     this->m_genCameraRaysTime =
 #endif
-        this->m_cudaDevice->launchGenerateCameraRaysKernel(rayworkSOA,
+        this->m_cudaDevice->launchGenerateCameraRaysKernel(this->m_rayworkFixedQueueBuff.getDevicePtr(),
                                                            workItems,
                                                            this->m_width,
                                                            this->m_height,
@@ -121,12 +116,12 @@ void WavefrontPathTracingIntegrator::render()
     /************************************************************************/
 
     // Bind RayWork buffer for tracing camera rays.
-    this->m_optixDevice->bindRayWorkBuffer(rayworkSOA,
+    this->m_optixDevice->bindRayWorkBuffer(this->m_rayworkFixedQueueBuff.getDevicePtr(),
                                            this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
                                            this->m_rayEscapedWorkQueueBuff.getDevicePtr());
 
     // Tracing primary rays for intersection.
-    assert(rayworkSOA.arraySize == workItems);
+    //assert(rayworkSOA.arraySize == workItems);
 #ifdef RAY_TRACING_DEBUGGING
     this->m_tracePrimaryRaysTime =
 #endif
@@ -213,7 +208,7 @@ void WavefrontPathTracingIntegrator::resize(uint32_t width, uint32_t height)
 
     // Resize buffers.
     this->m_queueCapacity                      = width * height;
-    this->m_rayworkBuff                        = std::make_unique<DeviceBuffer>(this->m_queueCapacity * kernel::SOAProxy<kernel::RayWork>::StructureSize);
+    this->m_rayworkFixedQueueBuff              = FixedSizeSOAProxyQueueDeviceBuffer<kernel::FixedSizeSOAProxyQueue<kernel::RayWork>>(this->m_queueCapacity);
     this->m_evalMaterialsWorkQueueBuff         = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalMaterialsWork>>(this->m_queueCapacity);
     this->m_evalShadowRayWorkMISBSDFQueueBuff  = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>>(this->m_queueCapacity);
     this->m_evalShadowRayWorkMISLightQueueBuff = SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>>(this->m_queueCapacity);

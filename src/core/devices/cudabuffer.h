@@ -128,6 +128,12 @@ private:
     std::unique_ptr<DeviceBuffer> m_SOAProxyQueueBuff;
 };
 
+// Alias template for FixedSizeSOAProxyQueueDeviceBuffer (they share the same implementation).
+template <typename FixedSizeSOAProxyQueue>
+using FixedSizeSOAProxyQueueDeviceBuffer = SOAProxyQueueDeviceBuffer<FixedSizeSOAProxyQueue>;
+
+
+
 /**
  * \brief
  *    PinnedHostDeviceBuffer represents a buffer allocated as pinned host memory.

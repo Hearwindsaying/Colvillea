@@ -55,16 +55,16 @@ __global__ void showImage(kernel::Texture texture,
     outputBuffer[jobId] = value;
 }
 
-__global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
-                                   int               nItems,
-                                   uint32_t          width,
-                                   uint32_t          height,
-                                   vec3f             camera_pos,
-                                   vec3f             camera_d00,
-                                   vec3f             camera_ddu,
-                                   vec3f             camera_ddv,
-                                   vec4f*            outputBuffer,
-                                   uint32_t          iterationIndex)
+__global__ void generateCameraRays(FixedSizeSOAProxyQueue<RayWork>* rayworkQueue,
+                                   int                              nItems,
+                                   uint32_t                         width,
+                                   uint32_t                         height,
+                                   vec3f                            camera_pos,
+                                   vec3f                            camera_d00,
+                                   vec3f                            camera_ddu,
+                                   vec3f                            camera_ddv,
+                                   vec4f*                           outputBuffer,
+                                   uint32_t                         iterationIndex)
 {
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
     if (jobId >= nItems)
@@ -92,7 +92,7 @@ __global__ void generateCameraRays(SOAProxy<RayWork> rayworkBuff,
     ray.o = make_float3(camera_pos);
     ray.d = make_float3(normalize(camera_d00 + screen.u * camera_ddu + screen.v * camera_ddv));
 
-    rayworkBuff.setVar(jobId, RayWork{ray, pixelIndex, samplerSeed});
+    rayworkQueue->setWorkItem(jobId, RayWork{ray, pixelIndex, samplerSeed});
 }
 
 __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQueue,

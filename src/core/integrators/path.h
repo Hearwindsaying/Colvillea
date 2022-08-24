@@ -80,12 +80,11 @@ protected:
     std::unique_ptr<OptiXDevice> m_optixDevice;
     std::unique_ptr<CUDADevice>  m_cudaDevice;
 
-    std::unique_ptr<DeviceBuffer> m_rayworkBuff;
-
     uint32_t m_iterationIndex{0};
 
     uint32_t m_queueCapacity{0};
 
+    FixedSizeSOAProxyQueueDeviceBuffer<kernel::FixedSizeSOAProxyQueue<kernel::RayWork>> m_rayworkFixedQueueBuff;
 
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalMaterialsWork>> m_evalMaterialsWorkQueueBuff;
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>> m_evalShadowRayWorkMISLightQueueBuff;

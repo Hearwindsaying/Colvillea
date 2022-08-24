@@ -85,13 +85,7 @@ struct LaunchParams
     uint32_t iterationIndex{0};
     uint32_t width{0};
 
-    //colvillea::kernel::SOAProxy<colvillea::kernel::RayWork> rayworkBuff;
-    float3* o{nullptr};
-    float*  mint{nullptr};
-    float3* d{nullptr};
-    float*  maxt{nullptr};
-    int*    pixelIndex{nullptr};
-    vec4ui* randSeed{nullptr};
+    FixedSizeSOAProxyQueue<RayWork>* rayworkQueue{nullptr};
 
     /// Geometry entities in the scene.
     /// OptiXGetInstanceId() could retrieve the entity of current instance.

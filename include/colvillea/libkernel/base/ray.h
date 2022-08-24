@@ -168,6 +168,10 @@ struct RayEscapedWork
 {
     vec3f rayDirection;
     int   pixelIndex{0};
+
+    /// Path Tracing Only.
+    /// Path depth.
+    int depth{0};
 };
 
 template <>
@@ -178,6 +182,10 @@ struct SOAProxy<RayEscapedWork>
 
     int* pixelIndex;
 
+    /// Path Tracing Only.
+    /// Path depth.
+    int* depth{0};
+
     uint32_t arraySize{0};
 
     SOAProxy(void* devicePtr, uint32_t numElements) :
@@ -185,11 +193,13 @@ struct SOAProxy<RayEscapedWork>
     {
         this->rayDirection = static_cast<vec3f*>(devicePtr);
         this->pixelIndex   = reinterpret_cast<int*>(&this->rayDirection[numElements]);
+        this->depth        = reinterpret_cast<int*>(&this->pixelIndex[numElements]);
     }
 
     static constexpr size_t StructureSize =
         sizeof(std::remove_pointer_t<decltype(rayDirection)>) +
-        sizeof(std::remove_pointer_t<decltype(pixelIndex)>);
+        sizeof(std::remove_pointer_t<decltype(pixelIndex)>) +
+        sizeof(std::remove_pointer_t<decltype(depth)>);
 
     __device__ __host__ void setVar(int index, const RayEscapedWork& rayEscapedWork)
     {
@@ -197,6 +207,7 @@ struct SOAProxy<RayEscapedWork>
 
         this->rayDirection[index] = rayEscapedWork.rayDirection;
         this->pixelIndex[index]   = rayEscapedWork.pixelIndex;
+        this->depth[index]        = rayEscapedWork.depth;
     }
 
     __device__ RayEscapedWork getVar(int index) const
@@ -206,6 +217,7 @@ struct SOAProxy<RayEscapedWork>
         RayEscapedWork rayEscapedWork;
         rayEscapedWork.rayDirection = this->rayDirection[index];
         rayEscapedWork.pixelIndex   = this->pixelIndex[index];
+        rayEscapedWork.depth        = this->depth[index];
 
         return rayEscapedWork;
     }

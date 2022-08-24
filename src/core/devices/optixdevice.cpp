@@ -81,12 +81,7 @@ OptiXDevice::OptiXDevice() :
         {"width", OWL_UINT, OWL_OFFSETOF(kernel::LaunchParams, width)},
 
         // RayBuffer.
-        {"o", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, o)},
-        {"mint", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, mint)},
-        {"d", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, d)},
-        {"maxt", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, maxt)},
-        {"pixelIndex", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, pixelIndex)},
-        {"randSeed", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, randSeed)},
+        {"rayworkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, rayworkQueue)},
 
         {"geometryEntities", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, geometryEntities)},
         {"materials", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, materials)},
@@ -234,18 +229,14 @@ void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& tr
     owlBuildSBT(this->m_owlContext);
 }
 
-void OptiXDevice::bindRayWorkBuffer(const kernel::SOAProxy<kernel::RayWork>&                rayworkBufferSOA,
+void OptiXDevice::bindRayWorkBuffer(kernel::FixedSizeSOAProxyQueue<kernel::RayWork>*        rayworkQueueDevicePtr,
                                     const kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueueDevicePtr,
                                     const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr)
 {
-    owlParamsSet1ul(this->m_launchParams, "o", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.o));
-    owlParamsSet1ul(this->m_launchParams, "mint", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.mint));
-    owlParamsSet1ul(this->m_launchParams, "d", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.d));
-    owlParamsSet1ul(this->m_launchParams, "maxt", reinterpret_cast<uint64_t>(rayworkBufferSOA.ray.maxt));
-    owlParamsSet1ul(this->m_launchParams, "pixelIndex", reinterpret_cast<uint64_t>(rayworkBufferSOA.pixelIndex));
-    owlParamsSet1ul(this->m_launchParams, "randSeed", reinterpret_cast<uint64_t>(rayworkBufferSOA.randSeed));
+    assert(evalMaterialsWorkQueueDevicePtr != nullptr && rayEscapedQueueDevicePtr != nullptr && rayworkQueueDevicePtr != nullptr);
 
-    assert(evalMaterialsWorkQueueDevicePtr != nullptr && rayEscapedQueueDevicePtr != nullptr);
+    owlParamsSet1ul(this->m_launchParams, "rayworkQueue", reinterpret_cast<uint64_t>(rayworkQueueDevicePtr));
+
     owlParamsSet1ul(this->m_launchParams, "evalMaterialsWorkQueue", reinterpret_cast<uint64_t>(evalMaterialsWorkQueueDevicePtr));
     owlParamsSet1ul(this->m_launchParams, "rayEscapedWorkQueue", reinterpret_cast<uint64_t>(rayEscapedQueueDevicePtr));
 

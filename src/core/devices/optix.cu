@@ -40,17 +40,16 @@ OPTIX_RAYGEN_PROGRAM(primaryRay)
 {
     int jobId = optixGetLaunchIndex().x;
 
-    assert(optixLaunchParams.o &&
-           optixLaunchParams.mint &&
-           optixLaunchParams.d &&
-           optixLaunchParams.maxt);
+    assert(optixLaunchParams.rayworkQueue);
+
+    const RayWork& rayWork = optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId);
 
     // Fetching ray from ray buffer.
     owl::Ray ray;
-    ray.origin    = optixLaunchParams.o[jobId];
-    ray.tmin      = optixLaunchParams.mint[jobId];
-    ray.direction = optixLaunchParams.d[jobId];
-    ray.tmax      = optixLaunchParams.maxt[jobId];
+    ray.origin    = rayWork.ray.o;
+    ray.tmin      = rayWork.ray.mint;
+    ray.direction = rayWork.ray.d;
+    ray.tmax      = rayWork.ray.maxt;
 
     // Trace rays.
     optixTrace(optixLaunchParams.world,
@@ -110,8 +109,9 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
     //int pixelIndex = optixGetLaunchIndex().x;
     const int jobId = optixGetLaunchIndex().x;
 
-    assert(optixLaunchParams.pixelIndex != nullptr);
-    const int pixelIndex = optixLaunchParams.pixelIndex[jobId];
+    const RayWork& rayWork = optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId);
+
+    const int pixelIndex = rayWork.pixelIndex;
     assert(pixelIndex == jobId);
 
     const TriMesh& trimesh = owl::getProgramData<TriMesh>();
@@ -212,7 +212,7 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 
     evalMtlsWork.wo         = optixGetWorldRayDirection();
     evalMtlsWork.wo         = -evalMtlsWork.wo;
-    evalMtlsWork.sampleSeed = optixLaunchParams.randSeed[jobId];
+    evalMtlsWork.sampleSeed = rayWork.randSeed;
     evalMtlsWork.pixelIndex = pixelIndex;
 
     optixLaunchParams.evalMaterialsWorkQueue->pushWorkItem(evalMtlsWork);
@@ -231,8 +231,8 @@ OPTIX_MISS_PROGRAM(primaryRay)
     //int pixelIndex = optixGetLaunchIndex().x;
     const int jobId = optixGetLaunchIndex().x;
 
-    assert(optixLaunchParams.pixelIndex != nullptr);
-    const int pixelIndex = optixLaunchParams.pixelIndex[jobId];
+    const RayWork& rayWork    = optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId);
+    const int      pixelIndex = rayWork.pixelIndex;
     assert(pixelIndex == jobId);
 
     assert(optixLaunchParams.rayEscapedWorkQueue != nullptr);
