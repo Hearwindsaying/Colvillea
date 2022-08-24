@@ -89,7 +89,7 @@ struct CLViewer
     CLViewer(std::unique_ptr<core::RenderEngine> pRenderEngine,
              core::Scene*                        pScene,
              const std::string&                  title          = "Colvillea Demo",
-             const vec2i&                        initWindowSize = vec2i(1200, 800),
+             const vec2i&                        initWindowSize = vec2i(1280, 720),
              bool                                visible        = true,
              bool                                enableVsync    = false
              // ,

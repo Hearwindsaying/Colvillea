@@ -18,6 +18,8 @@
 #define GLFW_INCLUDE_NONE
 #include <glad/glad.h>
 
+#include <chrono>
+
 #include "CLViewer.h"
 #include "Camera.h"
 #include "InspectMode.h"
@@ -486,6 +488,9 @@ void CLViewer::handleInputs()
 
     if (LMPressed || LMReleased)
     {
+#ifdef RAY_TRACING_DEBUGGING
+        this->m_pRenderEngine->m_mousePos = vec2f{mousePositionf.x, mousePositionf.y};
+#endif
         this->mouseButtonLeft(newMousePosition, LMPressed);
     }
     else if (RMPressed || RMReleased)
@@ -569,6 +574,8 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
     glfwSetKeyCallback(handle, glfwindow_key_cb);
     glfwSetCharCallback(handle, glfwindow_char_cb);
 
+    std::chrono::steady_clock::time_point snapshot;
+
     while (!glfwWindowShouldClose(handle) && keepgoing())
     {
         glfwPollEvents();
@@ -607,6 +614,28 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
             ImGui::Text("counter = %d", counter);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+            #ifdef RAY_TRACING_DEBUGGING
+            float msCount = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - snapshot).count();
+            snapshot      = std::chrono::steady_clock::now();
+
+            const auto& integrator = this->m_pRenderEngine->getIntegrator();
+            if (integrator->getIntegratorType() == core::IntegratorType::WavefrontPathTracing)
+            {
+                ImGui::Text("Total CPU time: %.3f ms", msCount);
+                ImGui::Text("Total kernel time: %.3f ms", integrator->m_genCameraRaysTime + integrator->m_tracePrimaryRaysTime + integrator->m_evalEscapedRaysTime + integrator->m_evalMaterialsAndLightsTime + integrator->m_traceShadowRaysBSDFSamplingTime + integrator->m_traceShadowRaysLightSamplingTime + integrator->m_resetQueuesTime + integrator->m_postprocessingTime);
+                ImGui::Text("Wavefront Direct Lighting Performance Statistics breakdown (misc excluded): ");
+                ImGui::Text("Generate camera rays: %.3f ms", integrator->m_genCameraRaysTime);
+                ImGui::Text("Trace primary rays: %.3f ms", integrator->m_tracePrimaryRaysTime);
+                ImGui::Text("Evaluate escaped rays: %.3f ms", integrator->m_evalEscapedRaysTime);
+                ImGui::Text("Evaluate material and lights rays: %.3f ms", integrator->m_evalMaterialsAndLightsTime);
+                ImGui::Text("Trace shadow rays BSDF sampling: %.3f ms", integrator->m_traceShadowRaysBSDFSamplingTime);
+                ImGui::Text("Trace shadow rays Light sampling: %.3f ms", integrator->m_traceShadowRaysLightSamplingTime);
+                ImGui::Text("Reset queue time: %.3f ms", integrator->m_resetQueuesTime);
+                ImGui::Text("Postprocessing time: %.3f ms", integrator->m_postprocessingTime);
+            }
+            #endif
+
             ImGui::End();
         }
 

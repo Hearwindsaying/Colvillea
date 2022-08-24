@@ -36,6 +36,11 @@ public:
     Integrator(IntegratorType type) :
         m_integratorType{type} {}
 
+    IntegratorType getIntegratorType() const noexcept
+    {
+        return this->m_integratorType;
+    }
+
     virtual void buildBLAS(const std::vector<TriangleMesh*>& trimeshes) = 0;
     
     virtual void buildTLAS(const std::vector<const TriangleMesh*>& trimeshes,
@@ -71,6 +76,21 @@ public:
 
     /// Virtual destructor.
     virtual ~Integrator() {}
+
+    #ifdef RAY_TRACING_DEBUGGING
+public:
+    // Debug only.
+    vec2f m_mousePosition{0.0f};
+
+    float m_genCameraRaysTime{0.0f};
+    float m_tracePrimaryRaysTime{0.0f};
+    float m_evalEscapedRaysTime{0.0f};
+    float m_evalMaterialsAndLightsTime{0.0f};
+    float m_traceShadowRaysLightSamplingTime{0.0f};
+    float m_traceShadowRaysBSDFSamplingTime{0.0f};
+    float m_resetQueuesTime{0.0f};
+    float m_postprocessingTime{0.0f};
+    #endif
 
 private:
     /// Integrator type.

@@ -54,11 +54,11 @@ public:
 
     /// Launch OptiX intersection kernel to trace rays and read back
     /// intersection information.
-    void launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width);
+    float launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width);
 
-    void launchTraceShadowRayKernel(size_t                                            nItems,
-                                    kernel::vec4f*                                    outputBufferDevPtr,
-                                    kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr);
+    float launchTraceShadowRayKernel(size_t                                            nItems,
+                                     kernel::vec4f*                                    outputBufferDevPtr,
+                                     kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr);
 
 private:
     struct WrappedOWLContext
@@ -115,6 +115,8 @@ private:
 
     /// Accelerator data set.
     std::unique_ptr<TLASDataSet> m_worldTLAS;
+
+    cudaEvent_t m_eventStart{nullptr}, m_eventStop{nullptr};
 };
 } // namespace core
 } // namespace colvillea

@@ -13,6 +13,14 @@ class warp
 public:
     CL_CPU_GPU warp() = delete;
 
+    CL_CPU_GPU CL_INLINE static vec3f sphericalCoordsToCartesian(const float sintheta,
+                                                                 const float costheta,
+                                                                 const float sinphi,
+                                                                 const float cosphi)
+    {
+        return vec3f{sintheta * sinphi, costheta, sintheta * cosphi};
+    }
+
     /// Reference: http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
     static CL_CPU_GPU CL_INLINE vec2f squareToUniformConcentricDisk(const vec2f& sample)
     {
@@ -40,17 +48,34 @@ public:
         return vec2f(r * cosPhi, r * sinPhi);
     }
 
+    /// In Shading Space.
     static CL_CPU_GPU CL_INLINE float squareToCosineHemispherePdf(const vec3f& v)
     {
         return Frame::cosTheta(v) * M_1_PIf;
     }
 
+    /// In Shading Space.
     static CL_CPU_GPU CL_INLINE vec3f squareToCosineHemisphere(const vec2f& sample)
     {
         vec2f p = squareToUniformConcentricDisk(sample);
         float z = owl::common::sqrt(1.0f - p.x * p.x - p.y * p.y);
 
         return vec3f{p.x, p.y, z};
+    }
+
+    /// In Shading Space.
+    static CL_CPU_GPU CL_INLINE vec3f squareToUniformSphere(const vec2f& u)
+    {
+        float z   = 1 - 2 * u.x;
+        float r   = sqrtf(1 - z*z);
+        float phi = 2 * M_PIf * u.y;
+        return {r * std::cos(phi), r * std::sin(phi), z};
+    }
+
+    /// In Shading Space.
+    static CL_CPU_GPU CL_INLINE float squareToUniformSpherePdf()
+    {
+        return 0.25f * M_1_PIf;
     }
 };
 

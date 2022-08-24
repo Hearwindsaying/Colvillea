@@ -67,6 +67,17 @@ public:
         this->m_integrator->unregisterFramebuffer();
     }
 
+    #ifdef RAY_TRACING_DEBUGGING
+public:
+    // Debug only.
+    vec2f m_mousePos{0.0f};
+
+    const std::shared_ptr<Integrator>& getIntegrator() const
+    {
+        return this->m_integrator;
+    }
+    #endif
+
 protected:
     /************************************************************************/
     /*             Compile Renderables to kernel-ready form.                */

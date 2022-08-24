@@ -86,6 +86,12 @@ void WavefrontPathTracingIntegrator::buildEmitters(const std::vector<kernel::Emi
 
 void WavefrontPathTracingIntegrator::render()
 {
+#ifdef RAY_TRACING_DEBUGGING
+    // debug only.
+    this->m_cudaDevice->updateMousePosGlobalVar(this->m_mousePosition);
+    this->m_cudaDevice->updateWidthGlobalVar(this->m_width);
+#endif
+
     // Prepare RayWork SOA.
     int workItems = this->m_width * this->m_height;
 
@@ -96,16 +102,19 @@ void WavefrontPathTracingIntegrator::render()
 
 
     // Generate primary camera rays.
-    this->m_cudaDevice->launchGenerateCameraRaysKernel(rayworkSOA,
-                                                       workItems,
-                                                       this->m_width,
-                                                       this->m_height,
-                                                       this->m_camera.m_camera_pos,
-                                                       this->m_camera.m_camera_d00,
-                                                       this->m_camera.m_camera_ddu,
-                                                       this->m_camera.m_camera_ddv,
-                                                       this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
-                                                       this->m_iterationIndex);
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_genCameraRaysTime =
+#endif
+        this->m_cudaDevice->launchGenerateCameraRaysKernel(rayworkSOA,
+                                                           workItems,
+                                                           this->m_width,
+                                                           this->m_height,
+                                                           this->m_camera.m_camera_pos,
+                                                           this->m_camera.m_camera_d00,
+                                                           this->m_camera.m_camera_ddu,
+                                                           this->m_camera.m_camera_ddv,
+                                                           this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                           this->m_iterationIndex);
 
     /************************************************************************/
     /*                 Direct Lighting Integration Kernels                  */
@@ -118,46 +127,67 @@ void WavefrontPathTracingIntegrator::render()
 
     // Tracing primary rays for intersection.
     assert(rayworkSOA.arraySize == workItems);
-    this->m_optixDevice->launchTracePrimaryRayKernel(workItems, this->m_iterationIndex, this->m_width);
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_tracePrimaryRaysTime =
+#endif
+        this->m_optixDevice->launchTracePrimaryRayKernel(workItems, this->m_iterationIndex, this->m_width);
 
     // Handling missed rays.
     assert(this->m_domeEmitterBuff != nullptr);
-    this->m_cudaDevice->launchEvaluateEscapedRaysKernel(this->m_queueCapacity,
-                                                        this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
-                                                        this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
-                                                        this->m_iterationIndex,
-                                                        this->m_width,
-                                                        this->m_height,
-                                                        this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>());
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_evalEscapedRaysTime =
+#endif
+        this->m_cudaDevice->launchEvaluateEscapedRaysKernel(this->m_queueCapacity,
+                                                            this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
+                                                            this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                            this->m_iterationIndex,
+                                                            this->m_width,
+                                                            this->m_height,
+                                                            this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>());
 
     // Evaluate materials and lights.
-    this->m_cudaDevice->launchEvaluateMaterialsAndLightsKernel(this->m_queueCapacity,
-                                                               this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
-                                                               this->m_emittersBuff->getDevicePtrAs<const kernel::Emitter*>(),
-                                                               this->m_numEmitters,
-                                                               this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>(),
-                                                               this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
-                                                               this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_evalMaterialsAndLightsTime =
+#endif
+        this->m_cudaDevice->launchEvaluateMaterialsAndLightsKernel(this->m_queueCapacity,
+                                                                   this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
+                                                                   this->m_emittersBuff->getDevicePtrAs<const kernel::Emitter*>(),
+                                                                   this->m_numEmitters,
+                                                                   this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>(),
+                                                                   this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
+                                                                   this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
 
     // Trace shadow rays for MIS Light Sampling.
-    this->m_optixDevice->launchTraceShadowRayKernel(this->m_queueCapacity,
-                                                    this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
-                                                    this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr());
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_traceShadowRaysLightSamplingTime =
+#endif
+        this->m_optixDevice->launchTraceShadowRayKernel(this->m_queueCapacity,
+                                                        this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                        this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr());
 
     // Trace shadow rays for MIS BSDF Sampling.
-    this->m_optixDevice->launchTraceShadowRayKernel(this->m_queueCapacity,
-                                                    this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
-                                                    this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_traceShadowRaysBSDFSamplingTime =
+#endif
+        this->m_optixDevice->launchTraceShadowRayKernel(this->m_queueCapacity,
+                                                        this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                        this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
 
     // Reset Queues.
-    this->m_cudaDevice->launchResetQueuesKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
-                                                this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
-                                                this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
-                                                this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_resetQueuesTime =
+#endif
+        this->m_cudaDevice->launchResetQueuesKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
+                                                    this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
+                                                    this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
+                                                    this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
 
     // Post processing.
-    this->m_cudaDevice->launchPostProcessingKernel(this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
-                                                   this->m_queueCapacity);
+#ifdef RAY_TRACING_DEBUGGING
+    this->m_postprocessingTime =
+#endif
+        this->m_cudaDevice->launchPostProcessingKernel(this->m_outputBuff->getDevicePtrAs<kernel::vec4f*>(),
+                                                       this->m_queueCapacity);
 
     ++this->m_iterationIndex;
 

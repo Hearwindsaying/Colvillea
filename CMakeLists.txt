@@ -96,6 +96,23 @@ foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
             target_link_options(PublicBuildSettings INTERFACE "/INCREMENTAL:NO")
         endif()
     endif()
+
+    # Common CUDA Compile options.
+    # target_compile_options(PublicBuildSettings 
+    #                        INTERFACE 
+    #                        $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math;
+    #                        # TODO: Seems not working :(
+    #                        #--device-debug;
+    #                        --generate-line-info;
+    #                        # Separate device compilation
+    #                        #--device-c;--device-link>
+    #                        )
+    target_compile_options (
+        PublicBuildSettings
+            INTERFACE
+            "$<$<COMPILE_LANGUAGE:CUDA>:--std=c++17;--use_fast_math;--generate-line-info>"
+            #"$<$<COMPILE_LANGUAGE:CUDA>:$<IF:$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:$<TARGET_PROPERTY:CUDA_PTX_COMPILATION>>>>,-G;-g,-lineinfo;-maxrregcount;128>>"
+        )
 endforeach()
 
 if(DILIGENT_DEVELOPMENT)

@@ -103,7 +103,9 @@ set_source_files_properties(
 
 set_target_properties(colvillea-kernel PROPERTIES LINKER_LANGUAGE CXX)
 
-
+# Cannot passing through PublicBuildSettings.
+set_property (TARGET colvillea-kernel PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+set_property (TARGET colvillea-kernel PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
 target_include_directories(colvillea-kernel
 PUBLIC

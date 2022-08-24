@@ -175,6 +175,8 @@ public:
     {}
 
 #ifdef __CUDACC__
+#    define IMPORTANCE_SAMPLING
+
     /// <summary>
     /// Sample EDF of the dome emitter.
     /// </summary>
@@ -183,7 +185,6 @@ public:
     /// <returns></returns>
     CL_GPU vec3f sampleDirect(DirectSamplingRecord* pDirectRec, const vec2f& sample) const
     {
-#    define IMPORTANCE_SAMPLING
 #    ifdef IMPORTANCE_SAMPLING
         // Construct dist2D.
         Distribution2D dist2D{this->m_pUcondV_c,
@@ -225,12 +226,17 @@ public:
         pDirectRec->pdf /= 2.0f * M_PIf * M_PIf * sinTheta;
 
         return vec3f{this->m_hdriTex.eval2D(uv)};
-#    endif // IMPORTANCE_SAMPLING
+#    else // IMPORTANCE_SAMPLING
 
-        /*pDirectRec->direction = warp::squareToCosineHemisphere(sample);
-        pDirectRec->pdf       = warp::squareToCosineHemispherePdf(pDirectRec->direction);
+        // warp:: could only be used for shading space so we should do a conversion.
+        vec3f localDir = warp::squareToUniformSphere(sample);
 
-        return vec3f{this->m_hdriTex.eval2D(HDRIDome::directionToUVCoords(pDirectRec->direction))};*/
+        pDirectRec->direction = pDirectRec->shadingFrame.toWorld(localDir);
+        pDirectRec->pdf       = warp::squareToUniformSpherePdf();
+
+        return vec3f{this->m_hdriTex.eval2D(HDRIDome::directionToUVCoords(pDirectRec->direction))};
+
+#    endif
     }
 #endif
 
@@ -241,7 +247,6 @@ public:
     /// <returns></returns>
     CL_CPU_GPU CL_INLINE float pdfDirect(const DirectSamplingRecord& dRec) const
     {
-#define IMPORTANCE_SAMPLING
 #ifdef IMPORTANCE_SAMPLING
         // Construct dist2D.
         Distribution2D dist2D{this->m_pUcondV_c,
@@ -267,9 +272,10 @@ public:
         assert(dRec.measure == SamplingMeasure::SolidAngle);
 
         return dist2D.pdf2D(uv) / (2.0f * M_PIf * M_PIf * sinTheta);
-#endif // IMPORTANCE_SAMPLING
+#else  // IMPORTANCE_SAMPLING
 
-        //return warp::squareToCosineHemispherePdf(dRec.direction);
+        return warp::squareToUniformSpherePdf();
+#endif // IMPORTANCE_SAMPLING
     }
 
     /**
@@ -474,7 +480,7 @@ private:
                                                                  const float sinphi,
                                                                  const float cosphi)
     {
-        return vec3f{sintheta * sinphi, costheta, sintheta * cosphi};
+        return warp::sphericalCoordsToCartesian(sintheta, costheta, sinphi, cosphi);
     }
 
 

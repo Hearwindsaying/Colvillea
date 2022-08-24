@@ -14,6 +14,11 @@ std::unique_ptr<RenderEngine> RenderEngine::createRenderEngine(std::shared_ptr<I
 
 void RenderEngine::startRendering()
 {
+#ifdef RAY_TRACING_DEBUGGING
+    // Debug only.
+    this->m_integrator->m_mousePosition = this->m_mousePos;
+#endif
+
     this->compileMaterials();
 
     // Compile geometry entities for rendering.

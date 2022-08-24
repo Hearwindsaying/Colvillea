@@ -1,6 +1,7 @@
 #pragma once
 
 #include <libkernel/base/math.h>
+#include <libkernel/base/frame.h>
 
 namespace colvillea
 {
@@ -38,10 +39,14 @@ enum class SamplingMeasure : uint32_t
 
 struct DirectSamplingRecord
 {
+    /// [In] Shading frame.
+    //Frame shadingFrame;
+
     /// Probability distribution function value of the sample.
     float pdf{0.0f};
 
     /// Sampled unit direction pointing from reference point to the emitter.
+    /// [World Space]
     vec3f direction{0.0f};
 
     /// Measure of the pdf.

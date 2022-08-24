@@ -155,7 +155,7 @@ function(embed_ptx_colvillea)
   target_link_libraries(${PTX_TARGET} PRIVATE ${EMBED_PTX_PTX_LINK_LIBRARIES})
   set_property(TARGET ${PTX_TARGET} PROPERTY CUDA_PTX_COMPILATION ON)
   #set_property(TARGET ${PTX_TARGET} PROPERTY CUDA_ARCHITECTURES ${CUDA_ARCHITECTURES})
-  target_compile_options(${PTX_TARGET} PRIVATE "-lineinfo")
+  target_compile_options(${PTX_TARGET} PRIVATE "-lineinfo --use-fast-math")
 
   ## Create command to run the bin2c via the CMake script ##
 
@@ -233,6 +233,9 @@ PUBLIC
     owl::owl
 )
 
+# Cannot passing through PublicBuildSettings.
+set_property (TARGET colvillea-core PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+set_property (TARGET colvillea-core PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
 source_group("include/devices" FILES ${INCLUDE_DEVICES})
 source_group("include/integrators" FILES ${INCLUDE_INTEGRATORS})

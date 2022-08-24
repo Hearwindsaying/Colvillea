@@ -8,6 +8,12 @@ namespace colvillea
 {
 namespace kernel
 {
+#ifdef RAY_TRACING_DEBUGGING
+extern __device__ vec2f    mousePos;
+extern __device__ uint32_t fbWidth;
+#endif
+
+
 /// global kernel function declarations.
 __global__ void showImage(kernel::Texture texture,
                           int             nItems,

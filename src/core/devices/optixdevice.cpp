@@ -113,6 +113,9 @@ OptiXDevice::OptiXDevice() :
     // SBT should be built on demand.
     owlBuildPrograms(this->m_owlContext);
     owlBuildPipeline(this->m_owlContext);
+
+    CHECK_CUDA_CALL(cudaEventCreate(&this->m_eventStart));
+    CHECK_CUDA_CALL(cudaEventCreate(&this->m_eventStop));
 }
 
 OptiXDevice::~OptiXDevice()
@@ -127,6 +130,9 @@ OptiXDevice::~OptiXDevice()
 
     owlModuleRelease(this->m_owlModule);
     spdlog::info("Successfully destroyed OptiX-Owl module!");
+
+    CHECK_CUDA_CALL(cudaEventDestroy(this->m_eventStart));
+    CHECK_CUDA_CALL(cudaEventDestroy(this->m_eventStop));
 }
 
 void OptiXDevice::buildOptiXAccelBLASes(const std::vector<TriangleMesh*>& trimeshes)
@@ -256,7 +262,7 @@ void OptiXDevice::bindEntitiesBuffer(const kernel::Entity* entitiesDevicePtr)
     owlParamsSet1ul(this->m_launchParams, "geometryEntities", reinterpret_cast<uint64_t>(entitiesDevicePtr));
 }
 
-void OptiXDevice::launchTraceShadowRayKernel(size_t                                            nItems,
+float OptiXDevice::launchTraceShadowRayKernel(size_t                                            nItems,
                                              kernel::vec4f*                                    outputBufferDevPtr,
                                              kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr)
 {
@@ -265,12 +271,21 @@ void OptiXDevice::launchTraceShadowRayKernel(size_t                             
     owlParamsSet1ul(this->m_launchParams, "outputBuffer", reinterpret_cast<uint64_t>(outputBufferDevPtr));
     owlParamsSet1ul(this->m_launchParams, "evalShadowRayWorkQueue", reinterpret_cast<uint64_t>(evalShadowRayWorkQueueDevPtr));
 
+    CHECK_CUDA_CALL(cudaEventRecord(this->m_eventStart));
     // OWL does not support 1D launching...
     owlLaunch2D(this->m_raygenShadowRay, nItems, 1, this->m_launchParams);
+    CHECK_CUDA_CALL(cudaEventRecord(this->m_eventStop));
+
+    CHECK_CUDA_CALL(cudaEventSynchronize(this->m_eventStop));
+
+    float milliseconds = 0;
+    CHECK_CUDA_CALL(cudaEventElapsedTime(&milliseconds, this->m_eventStart, this->m_eventStop));
+
+    return milliseconds;
 }
 
 
-void OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width)
+float OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width)
 {
     // ##################################################################
     // now that everything is ready: launch it ....
@@ -281,8 +296,17 @@ void OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationI
     owlParamsSet1ui(this->m_launchParams, "iterationIndex", iterationIndex);
     owlParamsSet1ui(this->m_launchParams, "width", width);
 
+    CHECK_CUDA_CALL(cudaEventRecord(this->m_eventStart));
     // OWL does not support 1D launching...
     owlLaunch2D(this->m_raygenPrimaryRay, nItems, 1, this->m_launchParams);
+    CHECK_CUDA_CALL(cudaEventRecord(this->m_eventStop));
+
+    CHECK_CUDA_CALL(cudaEventSynchronize(this->m_eventStop));
+
+    float milliseconds = 0;
+    CHECK_CUDA_CALL(cudaEventElapsedTime(&milliseconds, this->m_eventStart, this->m_eventStop));
+
+    return milliseconds;
 }
 } // namespace core
 } // namespace colvillea

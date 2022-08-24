@@ -21,7 +21,10 @@ namespace colvillea
 {
 namespace kernel
 {
-
+#ifdef RAY_TRACING_DEBUGGING
+__device__ vec2f    mousePos;
+__device__ uint32_t fbWidth;
+#endif
 
 
 __host__ __device__ float3 make_float3(vec3f val)
@@ -152,6 +155,7 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
 
     vec3f Li{0.0f};
 
+    //#ifdef DIRECT_LIGHTING
     // Current BSDF must be smooth and without dirac term.
     vec3f value = LightSampler::sampleEmitterDirect(emitters, numEmitters, &dRec, sample);
     if ((value.x > 0.0f || value.y > 0.0f || value.z > 0.0f) && dRec.pdf > 0.0f)
@@ -176,9 +180,9 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
 
         vec3f bsdfVal = bsdf.eval(bsdfSamplingRecord);
         //printf("bsdfVal:%f %f %f\n", bsdfVal.x, bsdfVal.y, bsdfVal.z);
-        if (bsdfVal.x > 0.0f && bsdfVal.y > 0.0f && bsdfVal.z > 0.0f)
+        if (bsdfVal.x > 0.0f || bsdfVal.y > 0.0f || bsdfVal.z > 0.0f)
         {
-            bool  enableMIS = /*false*/ true;
+            bool  enableMIS = true;
             float bsdfPdf   = enableMIS ? bsdf.pdf(bsdfSamplingRecord) : 0.0f;
             float weight    = MISWeightBalanced(dRec.pdf /* / numEmitters*/ /* Brute force sampling. TODO: Remove this and add to sampler. */, bsdfPdf);
 
@@ -189,13 +193,13 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
 
             Ray shadowRay{evalMtlsWork.pHit, dRec.direction};
             shadowRay.mint = 0.001f;
-            
+
             // Enqueue shadow ray after computing tentative radiance contribution.
             int entry = evalShadowRayWorkMISLightQueue->pushWorkItem(EvalShadowRayWork{shadowRay, Li, evalMtlsWork.pixelIndex});
 
 
             /*vec3f retrievedLo = evalShadowRayWorkQueue->getWorkSOA().getVar(entry).Lo;
-            printf("li old: %f %f %f li from queue reading: %f %f %f\n", 
+            printf("li old: %f %f %f li from queue reading: %f %f %f\n",
                 Li.x, Li.y, Li.z,
                    retrievedLo.x, retrievedLo.y, retrievedLo.z);
             Ray readRay = evalShadowRayWorkQueue->getWorkSOA().getVar(entry).shadowRay;
@@ -205,12 +209,13 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
                    shadowRay.d.y == readRay.d.y && shadowRay.d.z == readRay.d.z);*/
         }
     }
+    //#endif
 
     /************************************************************************/
     /*                             BSDF Sampling (MIS)                      */
     /************************************************************************/
 
-    // Fetch new random samples for bsdf sampling.
+    //// Fetch new random samples for bsdf sampling.
     sample = Sampler::next2D(randSeedPtr);
 
     Frame shadingFrame{evalMtlsWork.dpdv, evalMtlsWork.dpdu, evalMtlsWork.ns};
@@ -224,12 +229,22 @@ __global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* eva
     if (bsdfVal.x > 0.0f || bsdfVal.y > 0.0f || bsdfVal.z > 0.0f)
     {
         Ray shadowRay{};
-        shadowRay.o = evalMtlsWork.pHit;
-        shadowRay.d = bsdfSamplingRecord.wiLocal;
+        shadowRay.o    = evalMtlsWork.pHit;
+        shadowRay.d    = shadingFrame.toWorld(bsdfSamplingRecord.wiLocal);
         shadowRay.mint = 0.001;
 
         dRec           = DirectSamplingRecord{0.0f, shadowRay.d, SamplingMeasure::SolidAngle};
         float lightPdf = domeEmitter->pdfDirect(dRec);
+
+#ifdef RAY_TRACING_DEBUGGING
+        vec2ui pixelPosi = pixelIndexToPixelPos(evalMtlsWork.pixelIndex, kernel::fbWidth);
+        if (pixelPosi.x == static_cast<uint32_t>(kernel::mousePos.x) &&
+            pixelPosi.y == static_cast<uint32_t>(kernel::mousePos.y))
+        {
+            //printf("pixelPosi.x %u %u\n", pixelPosi.x, pixelPosi.y);
+            //printf("lightPdf:%f bsdf.x:%f\n", lightPdf, bsdfVal.x);
+        }
+#endif
 
         if (lightPdf > 0.0f)
         {
@@ -255,7 +270,7 @@ __global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*    escapedRay
                                     SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
                                     SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue)
 {
-    assert(escapedRayQueue != nullptr && evalMaterialsWorkQueue != nullptr && evalShadowRayWorkMISLightQueue != nullptr && evalShadowRayWorkMISBSDFQueue!=nullptr);
+    assert(escapedRayQueue != nullptr && evalMaterialsWorkQueue != nullptr && evalShadowRayWorkMISLightQueue != nullptr && evalShadowRayWorkMISBSDFQueue != nullptr);
 
     int jobId = blockIdx.x * blockDim.x + threadIdx.x;
     if (jobId > 0)

@@ -24,24 +24,27 @@ namespace kernel
 struct Frame
 {
     /// Secondary tangent.
-    vec3f s;
+    vec3f s{0.f};
 
     /// Tangent.
-    vec3f t;
+    vec3f t{0.f};
 
     /// Normal.
-    vec3f n;
-
+    vec3f n{0.f};
+     
     /// Constructor.
     CL_CPU_GPU CL_INLINE Frame(const vec3f& secondaryTangent, const vec3f& tangent, const vec3f& normal) :
         s(secondaryTangent), t(tangent), n(normal) {}
+
+    /// Default constructor.
+    //Frame() = default;
 
     /// <summary>
     /// Convert vector from world frame to local frame.
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
-    CL_CPU_GPU CL_INLINE vec3f toLocal(const vec3f& v)
+    CL_CPU_GPU CL_INLINE vec3f toLocal(const vec3f& v) const
     {
         return vec3f{dot(v, this->t),
                      dot(v, this->s),
@@ -54,7 +57,7 @@ struct Frame
     /// </summary>
     /// <param name="v"></param>
     /// <returns></returns>
-    CL_CPU_GPU CL_INLINE vec3f toWorld(const vec3f& v)
+    CL_CPU_GPU CL_INLINE vec3f toWorld(const vec3f& v) const
     {
         return v.x * this->t + v.y * this->s + v.z * this->n;
     }
