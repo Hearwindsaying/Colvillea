@@ -49,10 +49,12 @@ set(SOURCE_OPTIX_KERNEL
     devices/optix.cu)
 
 set(INCLUDE_INTEGRATORS
+    integrators/direct.h
     integrators/path.h
 )
 
 set(SOURCE_INTEGRATORS
+    integrators/direct.cpp
     integrators/path.cpp
 )
 

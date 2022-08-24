@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     /*auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
     auto cubeMesh  = delegate::MeshImporter::loadDefaultCube();*/
 
-    std::shared_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::WavefrontPathTracing, 800, 600);
+    std::shared_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::WavefrontDirectLighting, 800, 600);
     std::shared_ptr<core::Scene>        pScene        = core::Scene::createScene();
     core::Scene*                        pSceneViewer  = pScene.get();
     std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(ptIntegrator, pScene);

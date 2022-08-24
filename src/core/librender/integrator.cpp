@@ -1,6 +1,7 @@
 #include <librender/integrator.h>
 
 #include "../integrators/path.h"
+#include "../integrators/direct.h"
 
 namespace colvillea
 {
@@ -10,6 +11,8 @@ std::unique_ptr<Integrator> Integrator::createIntegrator(IntegratorType type, ui
 {
     switch (type)
     {
+        case IntegratorType::WavefrontDirectLighting:
+            return std::make_unique<WavefrontDirectLightingIntegrator>(width, height);
         case IntegratorType::WavefrontPathTracing:
             return std::make_unique<WavefrontPathTracingIntegrator>(width, height);
         default:

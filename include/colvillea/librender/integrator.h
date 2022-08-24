@@ -24,6 +24,9 @@ enum class IntegratorType : uint32_t
     /// Unknown integrator type (default value)
     None = 0,
 
+    /// Wavefront direct lighting integrator using OptiX and CUDA devices.
+    WavefrontDirectLighting,
+
     /// Wavefront path tracing integrator using OptiX and CUDA devices.
     WavefrontPathTracing
 };

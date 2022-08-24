@@ -72,7 +72,7 @@ set(DEBUG_CONFIGURATIONS Debug CACHE INTERNAL "Debug configurations")
 set(RELEASE_CONFIGURATIONS Release RelWithDebInfo CACHE INTERNAL "Release configurations")
 
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
-    target_compile_definitions(PublicBuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>")
+    target_compile_definitions(PublicBuildSettings INTERFACE "$<$<CONFIG:${DBG_CONFIG}>:RAY_TRACING_DEBUGGING>")
     
     if(MSVC)
         # ASan will not work with CRT memory check. So if you want to use CRT utilities for
