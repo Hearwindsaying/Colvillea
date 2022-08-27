@@ -44,9 +44,19 @@ public:
     void buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& trimeshes,
                              const std::vector</*const */ uint32_t>& instanceIDs);
 
+    /**
+     * .
+     * 
+     * \param rayworkQueueDevicePtr
+     * \param evalMaterialsWorkQueueDevicePtr
+     * \param rayEscapedQueueDevicePtr
+     * \param indirectRayWorkQueueDevicePtr
+     *    This can be nullptr for direct lighting integrator.
+     */
     void bindRayWorkBuffer(kernel::FixedSizeSOAProxyQueue<kernel::RayWork>*        rayworkQueueDevicePtr,
                            const kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueueDevicePtr,
-                           const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr);
+                           const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr,
+                           const kernel::SOAProxyQueue<kernel::RayWork>*           indirectRayWorkQueueDevicePtr);
 
     void bindMaterialsBuffer(const kernel::Material* materialsDevicePtr);
 
@@ -54,7 +64,7 @@ public:
 
     /// Launch OptiX intersection kernel to trace rays and read back
     /// intersection information.
-    float launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width);
+    float launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width, int isIndirectRay);
 
     float launchTraceShadowRayKernel(size_t                                            nItems,
                                      kernel::vec4f*                                    outputBufferDevPtr,

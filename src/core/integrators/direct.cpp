@@ -118,14 +118,15 @@ void WavefrontDirectLightingIntegrator::render()
     // Bind RayWork buffer for tracing camera rays.
     this->m_optixDevice->bindRayWorkBuffer(this->m_rayworkFixedQueueBuff.getDevicePtr(),
                                            this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
-                                           this->m_rayEscapedWorkQueueBuff.getDevicePtr());
+                                           this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
+                                           nullptr);
 
     // Tracing primary rays for intersection.
     //assert(rayworkSOA.arraySize == workItems);
 #ifdef RAY_TRACING_DEBUGGING
     this->m_tracePrimaryRaysTime =
 #endif
-        this->m_optixDevice->launchTracePrimaryRayKernel(workItems, this->m_iterationIndex, this->m_width);
+        this->m_optixDevice->launchTracePrimaryRayKernel(workItems, this->m_iterationIndex, this->m_width, 0);
 
     // Handling missed rays.
     assert(this->m_domeEmitterBuff != nullptr);
@@ -144,13 +145,13 @@ void WavefrontDirectLightingIntegrator::render()
 #ifdef RAY_TRACING_DEBUGGING
     this->m_evalMaterialsAndLightsTime =
 #endif
-        this->m_cudaDevice->launchEvaluateMaterialsAndLightsKernel(this->m_queueCapacity,
-                                                                   this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
-                                                                   this->m_emittersBuff->getDevicePtrAs<const kernel::Emitter*>(),
-                                                                   this->m_numEmitters,
-                                                                   this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>(),
-                                                                   this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
-                                                                   this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
+        this->m_cudaDevice->launchEvaluateMaterialsAndLightsKernelDL(this->m_queueCapacity,
+                                                                     this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
+                                                                     this->m_emittersBuff->getDevicePtrAs<const kernel::Emitter*>(),
+                                                                     this->m_numEmitters,
+                                                                     this->m_domeEmitterBuff->getDevicePtrAs<const kernel::Emitter*>(),
+                                                                     this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
+                                                                     this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
 
     // Trace shadow rays for MIS Light Sampling.
 #ifdef RAY_TRACING_DEBUGGING
@@ -175,7 +176,9 @@ void WavefrontDirectLightingIntegrator::render()
         this->m_cudaDevice->launchResetQueuesKernel(this->m_rayEscapedWorkQueueBuff.getDevicePtr(),
                                                     this->m_evalMaterialsWorkQueueBuff.getDevicePtr(),
                                                     this->m_evalShadowRayWorkMISLightQueueBuff.getDevicePtr(),
-                                                    this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr());
+                                                    this->m_evalShadowRayWorkMISBSDFQueueBuff.getDevicePtr(),
+                                                    nullptr // We do not have an indirect ray queue
+        );
 
     // Post processing.
 #ifdef RAY_TRACING_DEBUGGING

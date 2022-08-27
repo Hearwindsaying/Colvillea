@@ -88,7 +88,7 @@ protected:
 
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalMaterialsWork>> m_evalMaterialsWorkQueueBuff;
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>> m_evalShadowRayWorkMISLightQueueBuff;
-    SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::EvalShadowRayWork>> m_evalShadowRayWorkMISBSDFQueueBuff;
+    SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayWork>>           m_indirectRayQueueBuff;
     SOAProxyQueueDeviceBuffer<kernel::SOAProxyQueue<kernel::RayEscapedWork>>    m_rayEscapedWorkQueueBuff;
 
     std::unique_ptr<DeviceBuffer> m_geometryEntitiesBuff;

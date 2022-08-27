@@ -41,6 +41,13 @@ struct EvalMaterialsWork
 
     /// Index to pixel.
     int pixelIndex;
+
+    /// Path Tracing only.
+    /// Path depth.
+    int pathDepth;
+
+    /// Path throughput.
+    vec3f pathThroughput;
 };
 
 template <>
@@ -76,21 +83,29 @@ struct SOAProxy<EvalMaterialsWork>
     /// Index to pixel.
     int* pixelIndex;
 
+    /// Path Tracing only.
+    int* pathDepth;
+
+    /// Path throughput.
+    vec3f* pathThroughput;
+
     uint32_t arraySize{0};
 
     SOAProxy(void* devicePtr, uint32_t numElements) :
         arraySize{numElements}
     {
-        this->material   = static_cast<const Material**>(devicePtr);
-        this->pHit       = reinterpret_cast<vec3f*>(&this->material[numElements]);
-        this->ng         = reinterpret_cast<vec3f*>(&this->pHit[numElements]);
-        this->ns         = reinterpret_cast<vec3f*>(&this->ng[numElements]);
-        this->dpdu       = reinterpret_cast<vec3f*>(&this->ns[numElements]);
-        this->dpdv       = reinterpret_cast<vec3f*>(&this->dpdu[numElements]);
-        this->uv         = reinterpret_cast<vec2f*>(&this->dpdv[numElements]);
-        this->wo         = reinterpret_cast<vec3f*>(&this->uv[numElements]);
-        this->sampleSeed = reinterpret_cast<vec4ui*>(&this->wo[numElements]);
-        this->pixelIndex = reinterpret_cast<int*>(&this->sampleSeed[numElements]);
+        this->material       = static_cast<const Material**>(devicePtr);
+        this->pHit           = reinterpret_cast<vec3f*>(&this->material[numElements]);
+        this->ng             = reinterpret_cast<vec3f*>(&this->pHit[numElements]);
+        this->ns             = reinterpret_cast<vec3f*>(&this->ng[numElements]);
+        this->dpdu           = reinterpret_cast<vec3f*>(&this->ns[numElements]);
+        this->dpdv           = reinterpret_cast<vec3f*>(&this->dpdu[numElements]);
+        this->uv             = reinterpret_cast<vec2f*>(&this->dpdv[numElements]);
+        this->wo             = reinterpret_cast<vec3f*>(&this->uv[numElements]);
+        this->sampleSeed     = reinterpret_cast<vec4ui*>(&this->wo[numElements]);
+        this->pixelIndex     = reinterpret_cast<int*>(&this->sampleSeed[numElements]);
+        this->pathDepth      = reinterpret_cast<int*>(&this->pixelIndex[numElements]);
+        this->pathThroughput = reinterpret_cast<vec3f*>(&this->pathDepth[numElements]);
     }
 
     static constexpr size_t StructureSize =
@@ -103,22 +118,26 @@ struct SOAProxy<EvalMaterialsWork>
         sizeof(std::remove_pointer_t<decltype(uv)>) +
         sizeof(std::remove_pointer_t<decltype(wo)>) +
         sizeof(std::remove_pointer_t<decltype(sampleSeed)>) +
-        sizeof(std::remove_pointer_t<decltype(pixelIndex)>);
+        sizeof(std::remove_pointer_t<decltype(pixelIndex)>) +
+        sizeof(std::remove_pointer_t<decltype(pathDepth)>) +
+        sizeof(std::remove_pointer_t<decltype(pathThroughput)>);
 
     CL_CPU_GPU void setVar(int index, const EvalMaterialsWork& evalMaterialsWork)
     {
         assert(index < arraySize && index >= 0);
 
-        this->material[index]   = evalMaterialsWork.material;
-        this->pHit[index]       = evalMaterialsWork.pHit;
-        this->ng[index]         = evalMaterialsWork.ng;
-        this->ns[index]         = evalMaterialsWork.ns;
-        this->dpdu[index]       = evalMaterialsWork.dpdu;
-        this->dpdv[index]       = evalMaterialsWork.dpdv;
-        this->uv[index]         = evalMaterialsWork.uv;
-        this->wo[index]         = evalMaterialsWork.wo;
-        this->sampleSeed[index] = evalMaterialsWork.sampleSeed;
-        this->pixelIndex[index] = evalMaterialsWork.pixelIndex;
+        this->material[index]       = evalMaterialsWork.material;
+        this->pHit[index]           = evalMaterialsWork.pHit;
+        this->ng[index]             = evalMaterialsWork.ng;
+        this->ns[index]             = evalMaterialsWork.ns;
+        this->dpdu[index]           = evalMaterialsWork.dpdu;
+        this->dpdv[index]           = evalMaterialsWork.dpdv;
+        this->uv[index]             = evalMaterialsWork.uv;
+        this->wo[index]             = evalMaterialsWork.wo;
+        this->sampleSeed[index]     = evalMaterialsWork.sampleSeed;
+        this->pixelIndex[index]     = evalMaterialsWork.pixelIndex;
+        this->pathDepth[index]      = evalMaterialsWork.pathDepth;
+        this->pathThroughput[index] = evalMaterialsWork.pathThroughput;
     }
 
     CL_GPU EvalMaterialsWork getVar(int index) const
@@ -126,16 +145,18 @@ struct SOAProxy<EvalMaterialsWork>
         assert(index < arraySize && index >= 0);
 
         EvalMaterialsWork evalMaterialsWork;
-        evalMaterialsWork.material   = this->material[index];
-        evalMaterialsWork.pHit       = this->pHit[index];
-        evalMaterialsWork.ng         = this->ng[index];
-        evalMaterialsWork.ns         = this->ns[index];
-        evalMaterialsWork.dpdu       = this->dpdu[index];
-        evalMaterialsWork.dpdv       = this->dpdv[index];
-        evalMaterialsWork.uv         = this->uv[index];
-        evalMaterialsWork.wo         = this->wo[index];
-        evalMaterialsWork.sampleSeed = this->sampleSeed[index];
-        evalMaterialsWork.pixelIndex = this->pixelIndex[index];
+        evalMaterialsWork.material       = this->material[index];
+        evalMaterialsWork.pHit           = this->pHit[index];
+        evalMaterialsWork.ng             = this->ng[index];
+        evalMaterialsWork.ns             = this->ns[index];
+        evalMaterialsWork.dpdu           = this->dpdu[index];
+        evalMaterialsWork.dpdv           = this->dpdv[index];
+        evalMaterialsWork.uv             = this->uv[index];
+        evalMaterialsWork.wo             = this->wo[index];
+        evalMaterialsWork.sampleSeed     = this->sampleSeed[index];
+        evalMaterialsWork.pixelIndex     = this->pixelIndex[index];
+        evalMaterialsWork.pathDepth      = this->pathDepth[index];
+        evalMaterialsWork.pathThroughput = this->pathThroughput[index];
 
         return evalMaterialsWork;
     }
@@ -156,7 +177,7 @@ struct EvalShadowRayWork
     /// could share the same pixelIndex value.
     /// Think about MIS in direct lighting integrator, both light
     /// sampling and BSDF sampling requires sending shadow ray (and
-    /// thus pushing EvalShadowRayWork to the queue) so they will 
+    /// thus pushing EvalShadowRayWork to the queue) so they will
     /// have the same pixelIndex. If these ray work run in parallel,
     /// there could be race conditions and one may expect using atomic
     /// operations.

@@ -102,6 +102,12 @@ struct LaunchParams
     /************************************************************************/
     SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkQueue{nullptr};
 
+    /************************************************************************/
+    /*                           Indirect Ray Launch Params                 */
+    /************************************************************************/
+    int isIndirectRay{0};
+    SOAProxyQueue<RayWork>* indirectRayWorkQueue{nullptr};
+
     vec4f* outputBuffer{nullptr};
 };
 

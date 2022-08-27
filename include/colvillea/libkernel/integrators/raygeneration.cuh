@@ -39,17 +39,25 @@ __global__ void evaluateEscapedRays(SOAProxyQueue<RayEscapedWork>* escapedRayQue
                                     uint32_t                       height,
                                     const Emitter*                 hdriDome);
 
-__global__ void evaluateMaterialsAndLights(SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
+__global__ void evaluateMaterialsAndLightsDirectLighting(SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
                                            const Emitter*                    emitters,
                                            uint32_t                          numEmitters,
                                            const Emitter*                    domeEmitter,
                                            SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
                                            SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue);
 
+__global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
+                                                      const Emitter*                    emitters,
+                                                      uint32_t                          numEmitters,
+                                                      const Emitter*                    domeEmitter,
+                                                      SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
+                                                      SOAProxyQueue<RayWork>*           indirectRayQueue);
+
 __global__ void resetSOAProxyQueues(SOAProxyQueue<RayEscapedWork>*    escapedRayQueue,
                                     SOAProxyQueue<EvalMaterialsWork>* evalMaterialsWorkQueue,
                                     SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
-                                    SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue);
+                                    SOAProxyQueue<EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue,
+                                    SOAProxyQueue<RayWork>*           indirectRayQueue);
 
 __global__ void postprocessing(vec4f* outputBuffer, int nItems);
 

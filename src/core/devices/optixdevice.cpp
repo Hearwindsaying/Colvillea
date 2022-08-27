@@ -93,6 +93,9 @@ OptiXDevice::OptiXDevice() :
         {"evalShadowRayWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, evalShadowRayWorkQueue)},
         {"outputBuffer", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, outputBuffer)},
 
+        {"isIndirectRay", OWL_INT, OWL_OFFSETOF(kernel::LaunchParams, isIndirectRay)},
+        {"indirectRayWorkQueue", OWL_RAW_POINTER, OWL_OFFSETOF(kernel::LaunchParams, indirectRayWorkQueue)},
+
         {/* sentinel to mark end of list */}};
 
     this->m_launchParams = owlParamsCreate(this->m_owlContext, sizeof(kernel::LaunchParams),
@@ -231,11 +234,13 @@ void OptiXDevice::buildOptiXAccelTLAS(const std::vector<const TriangleMesh*>& tr
 
 void OptiXDevice::bindRayWorkBuffer(kernel::FixedSizeSOAProxyQueue<kernel::RayWork>*        rayworkQueueDevicePtr,
                                     const kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueueDevicePtr,
-                                    const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr)
+                                    const kernel::SOAProxyQueue<kernel::RayEscapedWork>*    rayEscapedQueueDevicePtr,
+                                    const kernel::SOAProxyQueue<kernel::RayWork>*           indirectRayWorkQueueDevicePtr)
 {
     assert(evalMaterialsWorkQueueDevicePtr != nullptr && rayEscapedQueueDevicePtr != nullptr && rayworkQueueDevicePtr != nullptr);
 
     owlParamsSet1ul(this->m_launchParams, "rayworkQueue", reinterpret_cast<uint64_t>(rayworkQueueDevicePtr));
+    owlParamsSet1ul(this->m_launchParams, "indirectRayWorkQueue", indirectRayWorkQueueDevicePtr != nullptr ? reinterpret_cast<uint64_t>(indirectRayWorkQueueDevicePtr) : 0ull);
 
     owlParamsSet1ul(this->m_launchParams, "evalMaterialsWorkQueue", reinterpret_cast<uint64_t>(evalMaterialsWorkQueueDevicePtr));
     owlParamsSet1ul(this->m_launchParams, "rayEscapedWorkQueue", reinterpret_cast<uint64_t>(rayEscapedQueueDevicePtr));
@@ -254,8 +259,8 @@ void OptiXDevice::bindEntitiesBuffer(const kernel::Entity* entitiesDevicePtr)
 }
 
 float OptiXDevice::launchTraceShadowRayKernel(size_t                                            nItems,
-                                             kernel::vec4f*                                    outputBufferDevPtr,
-                                             kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr)
+                                              kernel::vec4f*                                    outputBufferDevPtr,
+                                              kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkQueueDevPtr)
 {
     //spdlog::info("OptiX Device launching tracing shadow rays kernel.");
 
@@ -276,7 +281,7 @@ float OptiXDevice::launchTraceShadowRayKernel(size_t                            
 }
 
 
-float OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width)
+float OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iterationIndex, uint32_t width, int isIndirectRay)
 {
     // ##################################################################
     // now that everything is ready: launch it ....
@@ -286,6 +291,7 @@ float OptiXDevice::launchTracePrimaryRayKernel(size_t nItems, uint32_t iteration
 
     owlParamsSet1ui(this->m_launchParams, "iterationIndex", iterationIndex);
     owlParamsSet1ui(this->m_launchParams, "width", width);
+    owlParamsSet1i(this->m_launchParams, "isIndirectRay", isIndirectRay);
 
     CHECK_CUDA_CALL(cudaEventRecord(this->m_eventStart));
     // OWL does not support 1D launching...

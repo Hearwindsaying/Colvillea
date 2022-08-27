@@ -615,12 +615,12 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-            #ifdef RAY_TRACING_DEBUGGING
+#ifdef RAY_TRACING_DEBUGGING
             float msCount = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - snapshot).count();
             snapshot      = std::chrono::steady_clock::now();
 
             const auto& integrator = this->m_pRenderEngine->getIntegrator();
-            if (integrator->getIntegratorType() == core::IntegratorType::WavefrontPathTracing)
+            //if (integrator->getIntegratorType() == core::IntegratorType::WavefrontPathTracing)
             {
                 ImGui::Text("Total CPU time: %.3f ms", msCount);
                 ImGui::Text("Total kernel time: %.3f ms", integrator->m_genCameraRaysTime + integrator->m_tracePrimaryRaysTime + integrator->m_evalEscapedRaysTime + integrator->m_evalMaterialsAndLightsTime + integrator->m_traceShadowRaysBSDFSamplingTime + integrator->m_traceShadowRaysLightSamplingTime + integrator->m_resetQueuesTime + integrator->m_postprocessingTime);
@@ -634,7 +634,7 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
                 ImGui::Text("Reset queue time: %.3f ms", integrator->m_resetQueuesTime);
                 ImGui::Text("Postprocessing time: %.3f ms", integrator->m_postprocessingTime);
             }
-            #endif
+#endif
 
             ImGui::End();
         }

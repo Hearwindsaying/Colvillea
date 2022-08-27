@@ -40,9 +40,18 @@ OPTIX_RAYGEN_PROGRAM(primaryRay)
 {
     int jobId = optixGetLaunchIndex().x;
 
-    assert(optixLaunchParams.rayworkQueue);
+    //assert(optixLaunchParams.rayworkQueue != nullptr && optixLaunchParams.indirectRayWorkQueue != nullptr);
 
-    const RayWork& rayWork = optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId);
+    assert((optixLaunchParams.isIndirectRay == 1) ||
+           ((optixLaunchParams.isIndirectRay == 0) && (jobId < optixLaunchParams.rayworkQueue->size())));
+
+    if ((optixLaunchParams.isIndirectRay == 1) && (jobId >= optixLaunchParams.indirectRayWorkQueue->size()))
+    {
+        return;
+    }
+
+    const RayWork& rayWork = optixLaunchParams.isIndirectRay == 0 ? optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId) :
+                                                                    optixLaunchParams.indirectRayWorkQueue->getWorkSOA().getVar(jobId);
 
     // Fetching ray from ray buffer.
     owl::Ray ray;
@@ -109,10 +118,10 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
     //int pixelIndex = optixGetLaunchIndex().x;
     const int jobId = optixGetLaunchIndex().x;
 
-    const RayWork& rayWork = optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId);
+    const RayWork& rayWork = optixLaunchParams.isIndirectRay == 0 ? optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId) :
+                                                                    optixLaunchParams.indirectRayWorkQueue->getWorkSOA().getVar(jobId);
 
     const int pixelIndex = rayWork.pixelIndex;
-    assert(pixelIndex == jobId);
 
     const TriMesh& trimesh = owl::getProgramData<TriMesh>();
 
@@ -210,10 +219,12 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
     evalMtlsWork.dpdu = dpdu;
     evalMtlsWork.dpdv = dpdv;
 
-    evalMtlsWork.wo         = optixGetWorldRayDirection();
-    evalMtlsWork.wo         = -evalMtlsWork.wo;
-    evalMtlsWork.sampleSeed = rayWork.randSeed;
-    evalMtlsWork.pixelIndex = pixelIndex;
+    evalMtlsWork.wo             = optixGetWorldRayDirection();
+    evalMtlsWork.wo             = -evalMtlsWork.wo;
+    evalMtlsWork.sampleSeed     = rayWork.randSeed;
+    evalMtlsWork.pixelIndex     = pixelIndex;
+    evalMtlsWork.pathDepth      = rayWork.pathDepth;
+    evalMtlsWork.pathThroughput = rayWork.pathThroughput;
 
     optixLaunchParams.evalMaterialsWorkQueue->pushWorkItem(evalMtlsWork);
 
@@ -227,16 +238,20 @@ OPTIX_CLOSEST_HIT_PROGRAM(trianglemesh)
 OPTIX_MISS_PROGRAM(primaryRay)
 ()
 {
-    // pixelIndex is the same as jobIndex, since this is primary ray generation.
-    //int pixelIndex = optixGetLaunchIndex().x;
     const int jobId = optixGetLaunchIndex().x;
 
-    const RayWork& rayWork    = optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId);
+    const RayWork& rayWork    = optixLaunchParams.isIndirectRay == 0 ? optixLaunchParams.rayworkQueue->getWorkSOA().getVar(jobId) :
+                                                                       optixLaunchParams.indirectRayWorkQueue->getWorkSOA().getVar(jobId);
     const int      pixelIndex = rayWork.pixelIndex;
-    assert(pixelIndex == jobId);
 
     assert(optixLaunchParams.rayEscapedWorkQueue != nullptr);
-    optixLaunchParams.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{optixGetWorldRayDirection(), pixelIndex});
+    assert(rayWork.pathDepth > 0 &&
+           rayWork.pathThroughput.x > 0.0f && rayWork.pathThroughput.y > 0.0f && rayWork.pathThroughput.z > 0.0f);
+    optixLaunchParams.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{optixGetWorldRayDirection(),
+                                                                       pixelIndex,
+                                                                       rayWork.pathDepth,
+                                                                       rayWork.pathThroughput,
+                                                                       rayWork.pathBSDFSamplingRadiance});
 }
 
 

@@ -42,7 +42,7 @@ public:
         this->launchKernelSync(&kernel::showImage, nItems, texture, nItems, width, height, outputBuffer);
     }
 
-    #ifdef RAY_TRACING_DEBUGGING
+#ifdef RAY_TRACING_DEBUGGING
     void updateMousePosGlobalVar(const vec2f& _mousePos)
     {
         //spdlog::info("Updated mousepos:({}, {})", _mousePos.x, _mousePos.y);
@@ -54,7 +54,7 @@ public:
         //spdlog::info("Updated framebuffer width: {}", width);
         CHECK_CUDA_CALL(cudaMemcpyToSymbol(kernel::fbWidth, &width, sizeof(uint32_t)));
     }
-    #endif
+#endif
 
     /**
      * \brief
@@ -84,38 +84,72 @@ public:
 
     /**
      * \brief
-     *    Launch shading kernel.
+     *    Launch shading kernel for direct lighting integrator.
      */
-    float launchEvaluateMaterialsAndLightsKernel(int                                               nItems,
-                                                 kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
-                                                 const kernel::Emitter*                            emitters,
-                                                 uint32_t                                          numEmitters,
-                                                 const kernel::Emitter*                            domeEmitter,
-                                                 kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
-                                                 kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue)
+    float launchEvaluateMaterialsAndLightsKernelDL(int                                               nItems,
+                                                   kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
+                                                   const kernel::Emitter*                            emitters,
+                                                   uint32_t                                          numEmitters,
+                                                   const kernel::Emitter*                            domeEmitter,
+                                                   kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
+                                                   kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue)
     {
         assert(evalMaterialsWorkQueue != nullptr &&
                emitters != nullptr &&
                evalShadowRayWorkMISLightQueue != nullptr &&
                evalShadowRayWorkMISBSDFQueue != nullptr);
-        return this->launchKernelSync(&kernel::evaluateMaterialsAndLights, nItems,
+        return this->launchKernelSync(&kernel::evaluateMaterialsAndLightsDirectLighting, nItems,
                                       evalMaterialsWorkQueue, emitters, numEmitters, domeEmitter, evalShadowRayWorkMISLightQueue, evalShadowRayWorkMISBSDFQueue);
     }
 
+    /**
+     * \brief
+     *    Launch shading kernel for path tracing integrator.
+     */
+    float launchEvaluateMaterialsAndLightsKernelPT(int                                               nItems,
+                                                   kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
+                                                   const kernel::Emitter*                            emitters,
+                                                   uint32_t                                          numEmitters,
+                                                   const kernel::Emitter*                            domeEmitter,
+                                                   kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
+                                                   kernel::SOAProxyQueue<kernel::RayWork>*           indirectRayQueue)
+    {
+        assert(evalMaterialsWorkQueue != nullptr &&
+               emitters != nullptr &&
+               evalShadowRayWorkMISLightQueue != nullptr &&
+               indirectRayQueue != nullptr);
+        return this->launchKernelSync(&kernel::evaluateMaterialsAndLightsPathTracing, nItems,
+                                      evalMaterialsWorkQueue, emitters, numEmitters, domeEmitter, evalShadowRayWorkMISLightQueue, indirectRayQueue);
+    }
+
+    /**
+     * \brief
+     *    Launch reset queues kernel.
+     * 
+     * \param escapedRayQueue
+     * \param evalMaterialsWorkQueue
+     * \param evalShadowRayWorkMISLightQueue
+     * 
+     * \param evalShadowRayWorkMISBSDFQueue
+     *    This parameter can be nullptr if we do not need to reset this.
+     * \param indirectRayQueue
+     *    This parameter can be nullptr if we do not need to reset this.
+     * \return 
+     */
     float launchResetQueuesKernel(kernel::SOAProxyQueue<kernel::RayEscapedWork>*    escapedRayQueue,
                                   kernel::SOAProxyQueue<kernel::EvalMaterialsWork>* evalMaterialsWorkQueue,
                                   kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISLightQueue,
-                                  kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue)
+                                  kernel::SOAProxyQueue<kernel::EvalShadowRayWork>* evalShadowRayWorkMISBSDFQueue,
+                                  kernel::SOAProxyQueue<kernel::RayWork>*           indirectRayQueue)
     {
-        assert(escapedRayQueue != nullptr && evalMaterialsWorkQueue != nullptr && evalShadowRayWorkMISLightQueue != nullptr && evalShadowRayWorkMISBSDFQueue != nullptr);
-        return this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalMaterialsWorkQueue, evalShadowRayWorkMISLightQueue, evalShadowRayWorkMISBSDFQueue);
+        return this->launchKernel1x1Sync(&kernel::resetSOAProxyQueues, escapedRayQueue, evalMaterialsWorkQueue, evalShadowRayWorkMISLightQueue, evalShadowRayWorkMISBSDFQueue, indirectRayQueue);
     }
 
     float launchPostProcessingKernel(vec4f* outputBuffer, int nItems)
     {
         assert(outputBuffer != nullptr);
         return this->launchKernelSync(&kernel::postprocessing, nItems,
-                               outputBuffer, nItems);
+                                      outputBuffer, nItems);
     }
 
     void launchHDRIPreprocessingKernels(kernel::Emitter* emitter,

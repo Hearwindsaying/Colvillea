@@ -113,11 +113,22 @@ struct SOAProxy<Ray>
     }
 };
 
+/// TODO: Should rename RayWork.
 struct RayWork
 {
     Ray    ray;
     int    pixelIndex{0};
     vec4ui randSeed{0};
+
+    /// Path Tracing only.
+    /// Path depth, zero is an invalid value.
+    int pathDepth{0};
+
+    /// Path Throughput.
+    vec3f pathThroughput{0.0f};
+
+    /// MIS BSDFSampling radiance.
+    vec3f pathBSDFSamplingRadiance{0.0f};
 };
 
 template <>
@@ -128,27 +139,46 @@ struct SOAProxy<RayWork>
     int*          pixelIndex;
     vec4ui*       randSeed;
 
+    /// Path Tracing only.
+    /// Path depth, zero is an invalid value.
+    int* pathDepth{0};
+
+    /// Path Throughput.
+    vec3f* pathThroughput;
+
+    /// MIS BSDFSampling radiance.
+    vec3f* pathBSDFSamplingRadiance;
+
     uint32_t arraySize{0};
 
     SOAProxy(void* devicePtr, uint32_t numElements) :
         arraySize{numElements}, ray{devicePtr, numElements}
     {
-        this->pixelIndex = static_cast<int*>(ray.getEndAddress());
-        this->randSeed   = reinterpret_cast<vec4ui*>(&this->pixelIndex[numElements]);
+        this->pixelIndex               = static_cast<int*>(ray.getEndAddress());
+        this->randSeed                 = reinterpret_cast<vec4ui*>(&this->pixelIndex[numElements]);
+        this->pathDepth                = reinterpret_cast<int*>(&this->randSeed[numElements]);
+        this->pathThroughput           = reinterpret_cast<vec3f*>(&this->pathDepth[numElements]);
+        this->pathBSDFSamplingRadiance = reinterpret_cast<vec3f*>(&this->pathThroughput[numElements]);
     }
 
     static constexpr size_t StructureSize =
         decltype(ray)::StructureSize +
         sizeof(std::remove_pointer_t<decltype(pixelIndex)>) +
-        sizeof(std::remove_pointer_t<decltype(randSeed)>);
+        sizeof(std::remove_pointer_t<decltype(randSeed)>) +
+        sizeof(std::remove_pointer_t<decltype(pathDepth)>) +
+        sizeof(std::remove_pointer_t<decltype(pathThroughput)>) +
+        sizeof(std::remove_pointer_t<decltype(pathBSDFSamplingRadiance)>);
 
     __device__ __host__ void setVar(int index, const RayWork& raywork)
     {
         assert(index < arraySize && index >= 0);
 
         this->ray.setVar(index, raywork.ray);
-        this->pixelIndex[index] = raywork.pixelIndex;
-        this->randSeed[index]   = raywork.randSeed;
+        this->pixelIndex[index]               = raywork.pixelIndex;
+        this->randSeed[index]                 = raywork.randSeed;
+        this->pathDepth[index]                = raywork.pathDepth;
+        this->pathThroughput[index]           = raywork.pathThroughput;
+        this->pathBSDFSamplingRadiance[index] = raywork.pathBSDFSamplingRadiance;
     }
 
     __device__ RayWork getVar(int index) const
@@ -156,9 +186,12 @@ struct SOAProxy<RayWork>
         assert(index < arraySize && index >= 0);
 
         RayWork raywork;
-        raywork.ray        = this->ray.getVar(index);
-        raywork.pixelIndex = this->pixelIndex[index];
-        raywork.randSeed   = this->randSeed[index];
+        raywork.ray                      = this->ray.getVar(index);
+        raywork.pixelIndex               = this->pixelIndex[index];
+        raywork.randSeed                 = this->randSeed[index];
+        raywork.pathDepth                = this->pathDepth[index];
+        raywork.pathThroughput           = this->pathThroughput[index];
+        raywork.pathBSDFSamplingRadiance = this->pathBSDFSamplingRadiance[index];
 
         return raywork;
     }
@@ -171,7 +204,13 @@ struct RayEscapedWork
 
     /// Path Tracing Only.
     /// Path depth.
-    int depth{0};
+    int pathDepth{0};
+
+    /// Path Throughput.
+    vec3f pathThroughput{0.0f};
+
+    /// MIS BSDFSampling radiance.
+    vec3f pathBSDFSamplingRadiance{0.0f};
 };
 
 template <>
@@ -184,30 +223,42 @@ struct SOAProxy<RayEscapedWork>
 
     /// Path Tracing Only.
     /// Path depth.
-    int* depth{0};
+    int* pathDepth{0};
+
+    /// Path Throughput.
+    vec3f* pathThroughput;
+
+    /// MIS BSDFSampling radiance.
+    vec3f* pathBSDFSamplingRadiance;
 
     uint32_t arraySize{0};
 
     SOAProxy(void* devicePtr, uint32_t numElements) :
         arraySize{numElements}
     {
-        this->rayDirection = static_cast<vec3f*>(devicePtr);
-        this->pixelIndex   = reinterpret_cast<int*>(&this->rayDirection[numElements]);
-        this->depth        = reinterpret_cast<int*>(&this->pixelIndex[numElements]);
+        this->rayDirection             = static_cast<vec3f*>(devicePtr);
+        this->pixelIndex               = reinterpret_cast<int*>(&this->rayDirection[numElements]);
+        this->pathDepth                = reinterpret_cast<int*>(&this->pixelIndex[numElements]);
+        this->pathThroughput           = reinterpret_cast<vec3f*>(&this->pathDepth[numElements]);
+        this->pathBSDFSamplingRadiance = reinterpret_cast<vec3f*>(&this->pathThroughput[numElements]);
     }
 
     static constexpr size_t StructureSize =
         sizeof(std::remove_pointer_t<decltype(rayDirection)>) +
         sizeof(std::remove_pointer_t<decltype(pixelIndex)>) +
-        sizeof(std::remove_pointer_t<decltype(depth)>);
+        sizeof(std::remove_pointer_t<decltype(pathDepth)>) +
+        sizeof(std::remove_pointer_t<decltype(pathThroughput)>) +
+        sizeof(std::remove_pointer_t<decltype(pathBSDFSamplingRadiance)>);
 
     __device__ __host__ void setVar(int index, const RayEscapedWork& rayEscapedWork)
     {
         assert(index < arraySize && index >= 0);
 
-        this->rayDirection[index] = rayEscapedWork.rayDirection;
-        this->pixelIndex[index]   = rayEscapedWork.pixelIndex;
-        this->depth[index]        = rayEscapedWork.depth;
+        this->rayDirection[index]             = rayEscapedWork.rayDirection;
+        this->pixelIndex[index]               = rayEscapedWork.pixelIndex;
+        this->pathDepth[index]                = rayEscapedWork.pathDepth;
+        this->pathThroughput[index]           = rayEscapedWork.pathThroughput;
+        this->pathBSDFSamplingRadiance[index] = rayEscapedWork.pathBSDFSamplingRadiance;
     }
 
     __device__ RayEscapedWork getVar(int index) const
@@ -215,9 +266,12 @@ struct SOAProxy<RayEscapedWork>
         assert(index < arraySize && index >= 0);
 
         RayEscapedWork rayEscapedWork;
-        rayEscapedWork.rayDirection = this->rayDirection[index];
-        rayEscapedWork.pixelIndex   = this->pixelIndex[index];
-        rayEscapedWork.depth        = this->depth[index];
+        rayEscapedWork.rayDirection             = this->rayDirection[index];
+        rayEscapedWork.pixelIndex               = this->pixelIndex[index];
+        rayEscapedWork.pathDepth                = this->pathDepth[index];
+        rayEscapedWork.pathThroughput           = this->pathThroughput[index];
+        rayEscapedWork.pathBSDFSamplingRadiance = this->pathBSDFSamplingRadiance[index];
+
 
         return rayEscapedWork;
     }
