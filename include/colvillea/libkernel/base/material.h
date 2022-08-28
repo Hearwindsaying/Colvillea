@@ -8,6 +8,7 @@
 #include <texture_types.h>
 
 #include <libkernel/materials/diffusemtl.h>
+#include <libkernel/materials/metal.h>
 
 namespace colvillea
 {
@@ -21,6 +22,9 @@ enum class MaterialType : uint32_t
 {
     /// Diffuse material type.
     Diffuse,
+
+    /// Metal material type.
+    Metal,
 
     /// Unknown material type.
     Unknown
@@ -45,14 +49,21 @@ public:
 
     }
 
+    CL_CPU_GPU Material(const MetalMtl& material) :
+        m_materialType{MaterialType::Metal}, m_metalMtl{material}
+    {
+    }
+
     CL_CPU_GPU Material& operator=(const Material& material)
     {
         this->m_materialType = material.m_materialType;
-        assert(this->m_materialType == MaterialType::Diffuse);
         switch (material.m_materialType)
         {
             case MaterialType::Diffuse:
                 this->m_diffuseMtl = material.m_diffuseMtl;
+                break;
+            case MaterialType::Metal:
+                this->m_metalMtl = material.m_metalMtl;
                 break;
             default:
                 assert(false);
@@ -68,6 +79,8 @@ public:
         {
             case MaterialType::Diffuse:
                 return this->m_diffuseMtl.getBSDF(uv);
+            case MaterialType::Metal:
+                return this->m_metalMtl.getBSDF(uv);
             default:
                 assert(false);
         }
@@ -80,6 +93,7 @@ private:
     union
     {
         DiffuseMtl m_diffuseMtl;
+        MetalMtl   m_metalMtl;
     };
     
 };

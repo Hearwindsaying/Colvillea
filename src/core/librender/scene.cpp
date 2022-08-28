@@ -2,6 +2,7 @@
 
 #include <nodes/shapes/trianglemesh.h>
 #include <nodes/materials/diffusemtl.h>
+#include <nodes/materials/metal.h>
 #include <nodes/emitters/directional.h>
 #include <nodes/emitters/hdridome.h>
 #include <nodes/textures/imagetex2d.h>
@@ -131,6 +132,30 @@ std::shared_ptr<Material> Scene::createMaterial(MaterialType                    
     return material;
 }
 
+std::shared_ptr<Material> Scene::createMetalMaterial(const vec3f& specularReflectance, const std::shared_ptr<Texture>& roughness, const vec3f& eta, const vec3f& k)
+{
+    std::shared_ptr<Material> material = std::make_shared<MetalMtl>(this, specularReflectance, roughness, eta, k);
+
+    this->addMaterial(material);
+
+    // Note that texture must already be in the texture cache.
+    // No need to invoke addTexture().
+
+    return material;
+}
+
+std::shared_ptr<Material> Scene::createMetalMaterial(const vec3f& specularReflectance, const float roughness, const vec3f& eta, const vec3f& k)
+{
+    std::shared_ptr<Material> material = std::make_shared<MetalMtl>(this, specularReflectance, roughness, eta, k);
+
+    this->addMaterial(material);
+
+    // Note that texture must already be in the texture cache.
+    // No need to invoke addTexture().
+
+    return material;
+}
+
 std::shared_ptr<Entity> Scene::createEntity(const std::shared_ptr<TriangleMesh>& shape, const std::shared_ptr<Material>& material)
 {
     // There is no entity cache.
@@ -251,52 +276,8 @@ std::optional<std::vector<kernel::Material>> Scene::compileMaterials() const
         for (auto i = 0; i < this->m_materials.size(); ++i)
         {
             const core::Material& coreMtl = *this->m_materials[i];
-            if (coreMtl.getMaterialType() == MaterialType::Diffuse)
-            {
-                // Cast to concrete material type.
-                const core::DiffuseMtl* coreDiffuseMtl = static_cast<const core::DiffuseMtl*>(&coreMtl);
 
-                // Query whether we have a reflectance texture.
-                bool hasReflectanceTex = coreDiffuseMtl->getReflectanceTexture() != nullptr;
-                if (hasReflectanceTex)
-                {
-                    // Query core texture.
-                    const core::Texture* coreTextureBase = coreDiffuseMtl->getReflectanceTexture().get();
-
-                    // TODO: This has to be refactored.
-                    assert(coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D);
-                    if (coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D)
-                    {
-                        // Cast to concrete texture type.
-                        const core::ImageTexture2D* coreImageTex2D = static_cast<const core::ImageTexture2D*>(coreTextureBase);
-
-                        // Query cuda texture object and compile kernel::ImageTexture2D.
-                        kernel::ImageTexture2D kernelImageTex2D{coreImageTex2D->getDeviceTextureObjectPtr()};
-
-                        // Compile kernel::Texture.
-                        kernel::Texture kernelTexture{kernelImageTex2D};
-
-                        // Compile kernel::DiffuseMtl.
-                        kernel::DiffuseMtl kDiffuseMtl{kernelTexture};
-
-                        // Compile kernel::Material.
-                        kernel::Material kernelMtl{kDiffuseMtl};
-
-                        materials[i] = kernelMtl;
-                    }
-                }
-                else
-                {
-                    // Compile kernel::DiffuseMtl.
-                    kernel::DiffuseMtl kDiffuseMtl{coreDiffuseMtl->getReflectance()};
-
-                    // Compile kernel::Material.
-                    kernel::Material kernelMtl{kDiffuseMtl};
-
-                    materials[i] = kernelMtl;
-                }
-            }
-            assert(coreMtl.getMaterialType() == MaterialType::Diffuse);
+            materials[i] = coreMtl.compile();
         }
 
         return std::make_optional(std::move(materials));
@@ -324,13 +305,7 @@ std::optional<CompiledEmitterResult> Scene::compileEmitters() const
             {
                 const core::DirectionalEmitter* coreDirectionalEmitter = static_cast<const core::DirectionalEmitter*>(&coreEmitter);
 
-                kernel::DirectionalEmitter directionalEmitter{coreDirectionalEmitter->getIntensity(),
-                                                              coreDirectionalEmitter->getDirection(),
-                                                              coreDirectionalEmitter->getAngularRadius()};
-
-                kernel::Emitter kernelEmitter{directionalEmitter};
-
-                kernelEmitters[i] = kernelEmitter;
+                kernelEmitters[i] = coreDirectionalEmitter->compile();
             }
             else if (coreEmitter.getEmitterType() == kernel::EmitterType::HDRIDome)
             {
@@ -344,33 +319,9 @@ std::optional<CompiledEmitterResult> Scene::compileEmitters() const
                 // Query texture size.
                 domeEmitterTexResolution = coreTextureBase->getTextureResolution();
 
-                // TODO: This has to be refactored.
-                assert(coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D);
-                if (coreTextureBase->getTextureType() == kernel::TextureType::ImageTexture2D)
-                {
-                    // Cast to concrete texture type.
-                    const core::ImageTexture2D* coreImageTex2D = static_cast<const core::ImageTexture2D*>(coreTextureBase);
-
-                    // Query cuda texture object and compile kernel::ImageTexture2D.
-                    kernel::ImageTexture2D kernelImageTex2D{coreImageTex2D->getDeviceTextureObjectPtr()};
-
-                    // Compile kernel::Texture.
-                    kernel::Texture kernelTexture{kernelImageTex2D};
-
-                    // Compile kernel::HDRIDome.
-                    kernel::HDRIDome hdriDome{kernelTexture,
-                                              domeEmitterTexResolution,
-                                              coreDomeEmitter->getUcondVDevicePtr(),
-                                              coreDomeEmitter->getCDFpUcondVDevicePtr(),
-                                              coreDomeEmitter->getpVDevicePtr(),
-                                              coreDomeEmitter->getCDFpVDevicePtr()};
-
-                    kernel::Emitter kernelEmitter{hdriDome};
-
-                    kernelEmitters[i] = kernelEmitter;
-                    // Record this dome emitter.
-                    pDomeEmitterInKernelEmitters = &kernelEmitters[i];
-                }
+                kernelEmitters[i] = coreDomeEmitter->compile();
+                // Record this dome emitter.
+                pDomeEmitterInKernelEmitters = &kernelEmitters[i];
             }
         }
 

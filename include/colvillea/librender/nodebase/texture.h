@@ -156,6 +156,8 @@ public:
 
     virtual ~Texture() = 0;
 
+    virtual kernel::Texture compile() const noexcept = 0;
+
 private:
     kernel::TextureType m_textureType{kernel::TextureType::Unknown};
 };

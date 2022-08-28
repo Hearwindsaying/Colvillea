@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
     mi::base::Handle<mi::neuraylib::INeuray> neuray(load_and_get_ineuray((std::filesystem::path(MDL_DLL_DIR) / "libmdl_sdk" MI_BASE_DLL_FILE_EXT).string().c_str()));
     if (!neuray.is_valid_interface())
         spdlog::critical("The MDL SDK library failed to load and to provide "
-                     "the mi::neuraylib::INeuray interface.");
+                         "the mi::neuraylib::INeuray interface.");
 
     // Get the version information.
     mi::base::Handle<const mi::neuraylib::IVersion> version(
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
     if (!unload())
         spdlog::critical("Failed to unload the SDK.");
 
-    return 0;
+    //return 0;
 
 
 
@@ -213,7 +213,13 @@ int main(int argc, char* argv[])
     //auto texture = delegate::ImageUtils::loadTest2x2Image();
     auto texture = pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, image);
 
-    std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMaterial(core::MaterialType::Diffuse, /*texture*/ vec3f{0.75f});
+    //std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMaterial(core::MaterialType::Diffuse, /*texture*/ vec3f{0.75f});
+
+    /* Ag IOR from https://refractiveindex.info/. 
+        630 nm for red, 532 nm for green, and 465 nm for blue light. */
+    std::shared_ptr<core::Material> pMaterial = pSceneViewer->createMetalMaterial(vec3f{0.77f}, 0.2f,
+                                                                                  vec3f{0.056f, 0.054f, 0.046878f},
+                                                                                  vec3f{4.2543f, 3.4290f, 2.8028f});
 
     for (const auto& triMesh : objMeshes)
     {

@@ -52,6 +52,26 @@ CL_CPU_GPU CL_INLINE float length(const vec2f& x)
     return owl::common::polymorphic::sqrt(owl::dot(x, x));
 }
 
+CL_CPU_GPU CL_INLINE float hypot2(float a, float b)
+{
+    float r;
+    if (std::abs(a) > std::abs(b))
+    {
+        r = b / a;
+        r = std::abs(a) * std::sqrt(1.0f + r * r);
+    }
+    else if (b != 0.0f)
+    {
+        r = a / b;
+        r = std::abs(b) * std::sqrt(1.0f + r * r);
+    }
+    else
+    {
+        r = 0.0f;
+    }
+    return r;
+}
+
 /**
  * \brief.
  *    std::upper_bound() reimplementation for kernel code.
@@ -135,6 +155,56 @@ CL_CPU_GPU CL_INLINE vec4f convertsRGBToLinear(const vec4f& src)
 CL_CPU_GPU CL_INLINE float linearToLuminance(const vec3f& src)
 {
     return src.x * 0.212671 + src.y * 0.71516 + src.z * 0.072169;
+}
+
+/**
+ * \brief
+ *    Compute Fresnel reflection coefficients for conductor.
+ * 
+ * \param cosThetaI
+ * \param eta
+ * \param k
+ * \return 
+ * 
+ * \ref
+ *    Mitsuba 0.6.
+ */
+CL_CPU_GPU CL_INLINE vec3f fresnelConductor(const float& cosThetaI, const vec3f& eta, const vec3f& k)
+{
+    float cosThetaI2 = cosThetaI * cosThetaI,
+          sinThetaI2 = 1.0f - cosThetaI2,
+          sinThetaI4 = sinThetaI2 * sinThetaI2;
+
+    vec3f temp1 = eta * eta - k * k - vec3f(sinThetaI2),
+          a2pb2 = sqrt(temp1 * temp1 + k * k * eta * eta * 4),
+          a     = sqrt((a2pb2 + temp1) * 0.5f);
+
+    vec3f term1 = a2pb2 + vec3f(cosThetaI2),
+          term2 = a * (2 * cosThetaI);
+
+    vec3f Rs2 = (term1 - term2) / (term1 + term2);
+
+    vec3f term3 = a2pb2 * cosThetaI2 + vec3f(sinThetaI4),
+          term4 = term2 * sinThetaI2;
+
+    vec3f Rp2 = Rs2 * (term3 - term4) / (term3 + term4);
+
+    return 0.5f * (Rp2 + Rs2);
+}
+
+/**
+ * \brief
+ *    Reflect \ref wo about \ref n. Both directions
+ * are facing outwards but they do not concern about
+ * spaces they live (world/local does not matter).
+ * 
+ * \param wo
+ * \param n
+ * \return 
+ */
+CL_CPU_GPU CL_INLINE vec3f reflect(const vec3f& wo, const vec3f& n)
+{
+    return -wo + 2.0f * dot(wo, n) * n;
 }
 
 } // namespace kernel

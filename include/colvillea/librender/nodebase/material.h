@@ -5,6 +5,7 @@
 #include <owl/common/math/vec.h>
 
 #include <librender/nodebase/node.h>
+#include <libkernel/base/material.h>
 
 namespace colvillea
 {
@@ -23,7 +24,10 @@ enum class MaterialType : uint32_t
     None = 0,
 
     /// Diffuse material
-    Diffuse
+    Diffuse,
+
+    /// Metal material
+    Metal
 };
 
 class Material : public Node
@@ -39,6 +43,8 @@ public:
     }
 
     virtual ~Material() = 0;
+
+    virtual kernel::Material compile() const noexcept = 0;
 
 private:
     MaterialType m_materialType{MaterialType::None};

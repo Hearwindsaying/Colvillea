@@ -41,6 +41,16 @@ public:
 
     ~DiffuseMtl() {}
 
+    virtual kernel::Material compile() const noexcept override
+    {
+        if (this->m_reflectanceTex)
+        {
+            return kernel::Material{kernel::DiffuseMtl{this->m_reflectanceTex->compile()}};
+        }
+
+        return kernel::Material{kernel::DiffuseMtl{this->m_reflectance}};
+    }
+
 private:
     /// We keep a smart pointer to the core::Texture.
     /// This is a bit different from kernel::Texture and

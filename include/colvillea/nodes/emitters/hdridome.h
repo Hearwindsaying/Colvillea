@@ -26,6 +26,16 @@ public:
 
     ~HDRIDome();
 
+    virtual kernel::Emitter compile() const noexcept override
+    {
+        return kernel::Emitter{kernel::HDRIDome{this->m_envmap->compile(),
+                                                this->m_envmap->getTextureResolution(),
+                                                this->getUcondVDevicePtr(),
+                                                this->getCDFpUcondVDevicePtr(),
+                                                this->getpVDevicePtr(),
+                                                this->getCDFpVDevicePtr()}};
+    }
+
 private:
     std::shared_ptr<Texture> m_envmap;
 

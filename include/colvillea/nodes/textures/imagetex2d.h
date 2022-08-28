@@ -35,6 +35,11 @@ public:
         return this->m_imageResolution;
     }
 
+    virtual kernel::Texture compile() const noexcept override
+    {
+        return kernel::Texture{kernel::ImageTexture2D{this->m_cudaTextureObj}};
+    }
+
 private:
     vec2ui m_imageResolution{0};
 

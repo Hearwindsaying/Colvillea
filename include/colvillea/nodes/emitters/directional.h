@@ -28,6 +28,11 @@ public:
         return this->m_angularRadius;
     }
 
+    virtual kernel::Emitter compile() const noexcept override
+    {
+        return kernel::Emitter{kernel::DirectionalEmitter{this->m_intensity, this->m_direction, this->m_angularRadius}};
+    }
+
 private:
     /// Emitter intensity pre-multiplied by color.
     vec3f m_intensity{0.f};

@@ -15,10 +15,12 @@ set(INTERFACE_BASE
     ${KERNEL_INCLUDE_DIR}/libkernel/base/workqueue.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/samplingrecord.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/sampler.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/microfacet.h
 )
 
 set(INTERFACE_BSDFS
     ${KERNEL_INCLUDE_DIR}/libkernel/bsdfs/smoothdiffuse.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/bsdfs/roughconductor.h
 )
 
 set(INTERFACE_SHAPES
@@ -31,6 +33,7 @@ set(INTERFACE_INTEGRATORS
 
 set(INTERFACE_MATERIALS
     ${KERNEL_INCLUDE_DIR}/libkernel/materials/diffusemtl.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/materials/metal.h
 )
 
 set(INTERFACE_EMITTERS
@@ -59,6 +62,7 @@ set(SOURCE_INTEGRATORS
 
 set(SOURCE_BSDFS
     bsdfs/smoothdiffuse.cpp
+    bsdfs/roughconductor.cpp
 )
 
 set(SOURCE_EMITTERS
@@ -67,6 +71,7 @@ set(SOURCE_EMITTERS
 
 set(SOURCE_MATERIALS
     materials/diffusemtl.cpp
+    materials/metal.cpp
 )
 
 set(SOURCE_TEXTURES

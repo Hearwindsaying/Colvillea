@@ -30,6 +30,14 @@ public:
 
     virtual ~Emitter() = 0;
 
+    /**
+     * \brief
+     *    Compile core data structures to kernel ones.
+     * 
+     * \return 
+     */
+    virtual kernel::Emitter compile() const noexcept = 0;
+
 private:
     kernel::EmitterType m_emitterType{kernel::EmitterType::Unknown};
 };
