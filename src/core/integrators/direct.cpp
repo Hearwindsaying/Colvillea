@@ -237,5 +237,17 @@ void WavefrontDirectLightingIntegrator::mapFramebuffer()
                                         this->m_height);
 }
 
+std::unique_ptr<vec4f[]> WavefrontDirectLightingIntegrator::readbackFramebuffer()
+{
+    std::unique_ptr<vec4f[]> framebufferData = std::make_unique<vec4f[]>(this->m_width * this->m_height * sizeof(vec4f));
+
+    void* pDstData = framebufferData.get();
+    //void* pDstData = new vec4f[this->m_width * this->m_height];
+
+    this->m_outputBuff->downloadBuffer(pDstData, this->m_width * this->m_height * sizeof(vec4f));
+
+    return framebufferData;
+}
+
 } // namespace core
 } // namespace colvillea

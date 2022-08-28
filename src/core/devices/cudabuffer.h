@@ -72,6 +72,18 @@ public:
         return static_cast<T>(this->getDevicePtr());
     }
 
+    /// TODO: Add some validation on sizeInBytes.
+    /**
+     * \brief.
+     * 
+     * \param pData
+     *    It is user's responsibility to allocate and deallocate (enough) memory
+     * in pData.
+     * 
+     * \param sizeInBytes
+     */
+    void downloadBuffer(void* pData, size_t sizeInBytes) const;
+
 private:
     /// Number of elements in the buffer.
     //size_t m_numElements{0};

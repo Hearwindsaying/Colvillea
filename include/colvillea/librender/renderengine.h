@@ -67,7 +67,12 @@ public:
         this->m_integrator->unregisterFramebuffer();
     }
 
-    #ifdef RAY_TRACING_DEBUGGING
+    std::unique_ptr<vec4f[]> readbackFramebuffer()
+    {
+        return this->m_integrator->readbackFramebuffer();
+    }
+
+#ifdef RAY_TRACING_DEBUGGING
 public:
     // Debug only.
     vec2f m_mousePos{0.0f};
@@ -76,7 +81,7 @@ public:
     {
         return this->m_integrator;
     }
-    #endif
+#endif
 
 protected:
     /************************************************************************/

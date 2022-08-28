@@ -57,6 +57,14 @@ public:
 
     virtual void mapFramebuffer() override;
 
+    /**
+     * \brief.
+     *    Read back framebuffer to the CPU side for exporting.
+     * 
+     * \return 
+     */
+    virtual std::unique_ptr<vec4f[]> readbackFramebuffer() override;
+
     virtual std::pair<uint32_t, uint32_t> getFilmSize() override
     {
         return std::make_pair(this->m_width, this->m_height);

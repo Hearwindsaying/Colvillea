@@ -39,6 +39,8 @@
 #include <librender/renderengine.h>
 #include <librender/scene.h>
 
+#include <delegate/imageutil.h>
+
 namespace colvillea
 {
 namespace app
@@ -80,6 +82,20 @@ inline const char* getGLErrorString(GLenum error)
             }                                                        \
         } while (0)
 
+#    define GL_CHECK_NOTHROW(call)                                   \
+        do                                                           \
+        {                                                            \
+            call;                                                    \
+            GLenum err = glGetError();                               \
+            if (err != GL_NO_ERROR)                                  \
+            {                                                        \
+                std::stringstream ss;                                \
+                ss << "GL error " << getGLErrorString(err) << " at " \
+                   << __FILE__ << "(" << __LINE__ << "): " << #call  \
+                   << std::endl;                                     \
+                std::cerr << ss.str() << std::endl;                  \
+            }                                                        \
+        } while (0)
 
 #    define GL_CHECK_ERRORS()                                        \
         do                                                           \
@@ -436,6 +452,11 @@ CLViewer::CLViewer(std::unique_ptr<core::RenderEngine> pRenderEngine,
     //IM_ASSERT(font != NULL);
 }
 
+CLViewer::~CLViewer()
+{
+    GL_CHECK_NOTHROW(glDeleteTextures(1, &this->fbTexture));
+}
+
 
 /*! callback for a window resizing event */
 static void glfwindow_reshape_cb(GLFWwindow* window, int width, int height)
@@ -576,6 +597,8 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
 
     std::chrono::steady_clock::time_point snapshot;
 
+    bool exportEXR = false;
+
     while (!glfwWindowShouldClose(handle) && keepgoing())
     {
         glfwPollEvents();
@@ -599,19 +622,21 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
         this->handleInputs();
 
         {
-            static float f       = 0.0f;
-            static int   counter = 0;
-
             ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
+            //ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+            //ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
 
-            if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+            //if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
+            //    counter++;
+            //ImGui::SameLine();
+            //ImGui::Text("counter = %d", counter);
+
+            if (ImGui::Button("Export"))
+            {
+                exportEXR = true;
+            }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -654,15 +679,27 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
 
             draw();
             //
-            glBindTexture(GL_TEXTURE_2D, fbTexture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            GL_CHECK(glBindTexture(GL_TEXTURE_2D, fbTexture));
+            GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
 
             std::pair<uint32_t, uint32_t> filmSize = this->m_pRenderEngine->getFilmSize();
+
             //
             ImGui::Image((void*)(intptr_t)this->fbTexture, ImVec2(static_cast<float>(filmSize.first), static_cast<float>(filmSize.second)), ImVec2(0, 1), ImVec2(1, 0)); /* flip UV Coordinates due to the inconsistence(vertically invert) */
 
             ImGui::End();
+        }
+
+        if (exportEXR)
+        {
+            exportEXR = false;
+
+            /*GL_CHECK(glPixelStorei(GL_PACK_ALIGNMENT, 1));
+                GL_CHECK(glReadPixels(0, 0, filmSize.first, filmSize.second, GL_RGBA, GL_FLOAT, pixels));*/
+            auto pixels = this->m_pRenderEngine->readbackFramebuffer();
+            std::pair<uint32_t, uint32_t> filmSize = this->m_pRenderEngine->getFilmSize();
+            colvillea::delegate::ImageUtils::saveImageToDisk(pixels.get(), filmSize.first, filmSize.second, "test.exr");
         }
 
         // Rendering

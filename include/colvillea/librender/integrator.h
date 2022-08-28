@@ -45,7 +45,7 @@ public:
     }
 
     virtual void buildBLAS(const std::vector<TriangleMesh*>& trimeshes) = 0;
-    
+
     virtual void buildTLAS(const std::vector<const TriangleMesh*>& trimeshes,
                            const std::vector<uint32_t>&            instanceIDs) = 0;
 
@@ -69,7 +69,9 @@ public:
     virtual void registerFramebuffer(unsigned int glTexture) = 0;
 
     virtual void mapFramebuffer() = 0;
-    
+
+    virtual std::unique_ptr<vec4f[]> readbackFramebuffer() = 0;
+
     virtual std::pair<uint32_t, uint32_t> getFilmSize() = 0;
 
     virtual void resetIterationIndex() = 0;
@@ -80,7 +82,7 @@ public:
     /// Virtual destructor.
     virtual ~Integrator() {}
 
-    #ifdef RAY_TRACING_DEBUGGING
+#ifdef RAY_TRACING_DEBUGGING
 public:
     // Debug only.
     vec2f m_mousePosition{0.0f};
@@ -93,7 +95,7 @@ public:
     float m_traceShadowRaysBSDFSamplingTime{0.0f};
     float m_resetQueuesTime{0.0f};
     float m_postprocessingTime{0.0f};
-    #endif
+#endif
 
 private:
     /// Integrator type.

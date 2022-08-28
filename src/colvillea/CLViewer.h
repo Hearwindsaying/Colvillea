@@ -99,6 +99,8 @@ struct CLViewer
              // const float worldScale      = 1.f
     );
 
+    ~CLViewer();
+
     /*! window notifies us that we got resized */
     virtual void resize(const vec2i& newSize);
 

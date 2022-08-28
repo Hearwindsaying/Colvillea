@@ -237,6 +237,7 @@ void WavefrontPathTracingIntegrator::resize(uint32_t width, uint32_t height)
 
     // Resize framebuffer.
     //this->m_outputBuff = ManagedDeviceBuffer{width * height * sizeof(uint32_t)};
+    // TODO: Refactor size and avoid repetition everywhere.
     this->m_outputBuff = std::make_unique<DeviceBuffer>(width * height * sizeof(kernel::vec4f));
 
     // Resize buffers.
@@ -265,6 +266,16 @@ void WavefrontPathTracingIntegrator::mapFramebuffer()
                                         this->m_width * sizeof(kernel::vec4f),
                                         this->m_width * sizeof(kernel::vec4f),
                                         this->m_height);
+}
+
+std::unique_ptr<vec4f[]> WavefrontPathTracingIntegrator::readbackFramebuffer()
+{
+    std::unique_ptr<vec4f[]> framebufferData = std::make_unique<vec4f[]>(this->m_width * this->m_height * sizeof(vec4f));
+
+    void* pDstData = framebufferData.get();
+    this->m_outputBuff->downloadBuffer(pDstData, this->m_width * this->m_height * sizeof(vec4f));
+
+    return framebufferData;
 }
 
 } // namespace core

@@ -32,6 +32,11 @@ DeviceBuffer::~DeviceBuffer()
     CHECK_CUDA_CALL(cudaFree(this->m_devicePtr));
 }
 
+void DeviceBuffer::downloadBuffer(void* pData, size_t sizeInBytes) const
+{
+    CHECK_CUDA_CALL(cudaMemcpy(pData, this->m_devicePtr, sizeInBytes, cudaMemcpyKind::cudaMemcpyDefault));
+}
+
 
 PinnedHostDeviceBuffer::PinnedHostDeviceBuffer(size_t bufferSizeInBytes)
 {

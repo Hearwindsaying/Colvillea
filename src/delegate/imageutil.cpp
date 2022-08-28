@@ -1,5 +1,7 @@
 #include <delegate/imageutil.h>
 
+#include <FreeImagePlus.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
@@ -15,7 +17,7 @@ core::Image ImageUtils::loadImageFromDisk(const std::filesystem::path& imageFile
     static constexpr int kNumComponents = 4;
 
     bool isHDRFormat = stbi_is_hdr(imageFile.string().c_str());
-    
+
     if (isHDRFormat)
     {
         return ImageUtils::loadImageFromDiskRadianceHDR(imageFile);
@@ -24,6 +26,56 @@ core::Image ImageUtils::loadImageFromDisk(const std::filesystem::path& imageFile
     {
         return ImageUtils::loadImageFromDiskLDR(imageFile);
     }
+}
+
+void ImageUtils::saveImageToDisk(void*                        ptr,
+                                 size_t                       width,
+                                 size_t                       height,
+                                 const std::filesystem::path& imageFile)
+{
+    assert(ptr != nullptr);
+
+    FIBITMAP* bitmap = FreeImage_AllocateT(FIT_RGBAF, width, height);
+
+    int bitsPerPixel = FreeImage_GetBPP(bitmap);
+
+    int imageWidth  = FreeImage_GetWidth(bitmap);
+    int imageHeight = FreeImage_GetHeight(bitmap);
+
+    FREE_IMAGE_TYPE imageType = FreeImage_GetImageType(bitmap);
+    int             bytespp   = FreeImage_GetLine(bitmap) / imageWidth / sizeof(float);
+
+    spdlog::info("Saved image: {}", imageFile.string().c_str(), " with width {}", imageWidth, "and height {}", imageHeight, " {}", bitsPerPixel, " bits per pixel and {}", bytespp, " byte per pixel.");
+
+    float* buffer_data = static_cast<float*>(ptr);
+
+    // TODO: Review upside down issue of FreeImage.
+    for (auto y = 0; y < imageHeight; ++y)
+    {
+        // Note the scanline fetched by FreeImage is upside down -- the first scanline corresponds to the bottom of the image!
+        FLOAT* bits = reinterpret_cast<FLOAT*>(FreeImage_GetScanLine(bitmap, /*imageHeight - y - 1*/ y));
+
+        for (auto x = 0; x < imageWidth; ++x)
+        {
+            unsigned int buf_index = (imageWidth * y + x) * 4;
+
+            // Validation.
+            assert(!isinf(buffer_data[buf_index]) && !isnan(buffer_data[buf_index]));
+            assert(!isinf(buffer_data[buf_index + 1]) && !isnan(buffer_data[buf_index + 1]));
+            assert(!isinf(buffer_data[buf_index + 2]) && !isnan(buffer_data[buf_index + 2]));
+
+            bits[0] = buffer_data[buf_index];
+            bits[1] = buffer_data[buf_index + 1];
+            bits[2] = buffer_data[buf_index + 2];
+            bits[3] = 1.f;
+
+            // jump to next pixel
+            bits += bytespp;
+        }
+    }
+
+    FreeImage_Save(FIF_EXR, bitmap, imageFile.string().c_str());
+    FreeImage_Unload(bitmap);
 }
 
 core::Image ImageUtils::loadTest2x2Image()

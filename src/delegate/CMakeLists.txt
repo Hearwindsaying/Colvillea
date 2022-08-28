@@ -17,9 +17,21 @@ STATIC
     ${SOURCE_DELEGATE}
 )
 
+set(FREEIMAGE_INCLUDE_DIR "FREEIMAGE_INCLUDE_DIR")
+set(FREEIMAGE_PLUS_INCLUDE_DIR "FREEIMAGE_PLUS_INCLUDE_DIR")
+set(FREEIMAGE_LIB_DIR "FREEIMAGE_LIB_DIR")
+set(FREEIMAGE_DLL_DIR "FREEIMAGE_DLL_DIR")
+
+include(${CMAKE_SOURCE_DIR}/cmake/FindFreeImage.cmake)
+FIND_FREEIMAGE(FREEIMAGE_INCLUDE_DIR FREEIMAGE_PLUS_INCLUDE_DIR FREEIMAGE_LIB_DIR FREEIMAGE_DLL_DIR)
+
 target_include_directories(colvillea-delegate
 PUBLIC
     ${INTERFACE_DELEGATE}
+
+    # FreeImage
+    ${FREEIMAGE_INCLUDE_DIR}
+    ${FREEIMAGE_PLUS_INCLUDE_DIR}
 )
 
 target_link_libraries(colvillea-delegate
@@ -29,7 +41,25 @@ PRIVATE
 PUBLIC
     assimp::assimp
     stb_image
+    # FreeImage
+    ${FREEIMAGE_LIB_DIR}
 )
+
+
+set(FREE_IMAGE_DST_FILE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CONFIG})
+
+# Copy FreeImage dll.
+foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
+    #message("DBG_CONFIG: ${DBG_CONFIG}")
+    configure_file(${FREEIMAGE_DLL_DIR} ${FREE_IMAGE_DST_FILE}/${DBG_CONFIG}/FreeImage.dll COPYONLY)
+endforeach()
+
+foreach(REL_CONFIG ${RELEASE_CONFIGURATIONS})
+    #message("DBG_CONFIG: ${REL_CONFIG}")
+    configure_file(${FREEIMAGE_DLL_DIR} ${FREE_IMAGE_DST_FILE}/${REL_CONFIG}/FreeImage.dll COPYONLY)
+endforeach()
+
+
 
 # If we use assimp dlls, we should define ASSIMP_DLL to import the library.
 # if (NOT USE_STATIC_ASSIMP_LIBRARY)
