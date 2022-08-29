@@ -69,9 +69,9 @@ Dependencies above will be automatically resolved by CMake so all you need is to
 These dependencies are already included in `\3rdParty` directories so you do not need to do anything. They are basically consumed by `application` itself (and the `core` library makes use of `glad` for CUDA-OpenGL interops).
 
 ### Binary dependencies (Resolved Manually)
- * FreeImage
+ * freeimage
  * NVIDIA MDL
- * OpenImageDenoise
+ * openimagedenoise
 
 These libraries are needed to be resolved manually. You may download binary distributions according to the instructions output by CMake.
 
@@ -82,6 +82,11 @@ These libraries are needed to be resolved manually. You may download binary dist
 These could be downloaded from NVIDIA and you may also need a decent GPU driver. Check out OptiX release notes from the version you would use.
 
 *Note that Maxwell architectures GPU should work with OptiX 7 but they are deprecated by CUDA 11*.
+
+### Miscellaneous Dependencies
+ * doxygen
+
+Doxygen could be used to generate documents. Please refer to `\docs\doxyfile` for doxygen inputs. Note that we should add doxygen to continuous integration and hosting API documents in the future.
 
 ## References
 [NVIDIA OptiX](https://developer.nvidia.com/optix)
