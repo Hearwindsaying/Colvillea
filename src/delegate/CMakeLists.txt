@@ -52,20 +52,35 @@ PUBLIC
 )
 
 
-set(FREE_IMAGE_DST_FILE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CONFIG})
+set(RUNTIME_OUTPUT_DIR_CFG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CONFIG})
 
 # Copy FreeImage dll.
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
     #message("DBG_CONFIG: ${DBG_CONFIG}")
-    configure_file(${FREEIMAGE_DLL_DIR} ${FREE_IMAGE_DST_FILE}/${DBG_CONFIG}/FreeImage.dll COPYONLY)
+    configure_file(${FREEIMAGE_DLL_DIR} ${RUNTIME_OUTPUT_DIR_CFG}/${DBG_CONFIG}/FreeImage.dll COPYONLY)
 endforeach()
 
 foreach(REL_CONFIG ${RELEASE_CONFIGURATIONS})
     #message("DBG_CONFIG: ${REL_CONFIG}")
-    configure_file(${FREEIMAGE_DLL_DIR} ${FREE_IMAGE_DST_FILE}/${REL_CONFIG}/FreeImage.dll COPYONLY)
+    configure_file(${FREEIMAGE_DLL_DIR} ${RUNTIME_OUTPUT_DIR_CFG}/${REL_CONFIG}/FreeImage.dll COPYONLY)
 endforeach()
 
+# Copy OpenImageDenoise dll. This is a hack...
+set(OIDN_DLL "OIDN_DLL")
+get_target_property(OIDN_DLL OpenImageDenoise INTERFACE_INCLUDE_DIRECTORIES)
+set(OIDN_DLL "${OIDN_DLL}/../bin/OpenImageDenoise.dll")
+set(TBB_DLL "${OIDN_DLL}/../tbb12.dll")
 
+message("OIDN_DLL: ${OIDN_DLL}")
+foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
+    configure_file(${OIDN_DLL} ${RUNTIME_OUTPUT_DIR_CFG}/${DBG_CONFIG}/OpenImageDenoise.dll COPYONLY)
+    configure_file(${TBB_DLL} ${RUNTIME_OUTPUT_DIR_CFG}/${DBG_CONFIG}/tbb12.dll COPYONLY) 
+endforeach()
+
+foreach(REL_CONFIG ${RELEASE_CONFIGURATIONS})
+    configure_file(${OIDN_DLL} ${RUNTIME_OUTPUT_DIR_CFG}/${REL_CONFIG}/OpenImageDenoise.dll COPYONLY)
+    configure_file(${TBB_DLL} ${RUNTIME_OUTPUT_DIR_CFG}/${REL_CONFIG}/tbb12.dll COPYONLY) 
+endforeach()
 
 # If we use assimp dlls, we should define ASSIMP_DLL to import the library.
 # if (NOT USE_STATIC_ASSIMP_LIBRARY)

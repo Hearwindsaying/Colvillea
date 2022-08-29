@@ -30,6 +30,8 @@
 #include <librender/nodebase/camera.h>
 //#include <librender/scene.h>
 
+#include <delegate/denoiser.h>
+
 namespace colvillea
 {
 namespace core
@@ -260,6 +262,8 @@ protected:
     std::unique_ptr<core::RenderEngine> m_pRenderEngine;
     core::Camera                        m_camera;
     core::Scene*                        m_pScene{nullptr};
+
+    delegate::OpenImageDenoiser *m_oidn{nullptr};
 };
 
 } // namespace app

@@ -40,6 +40,7 @@
 #include <librender/scene.h>
 
 #include <delegate/imageutil.h>
+#include <delegate/denoiser.h>
 
 namespace colvillea
 {
@@ -375,7 +376,8 @@ CLViewer::CLViewer(std::unique_ptr<core::RenderEngine> pRenderEngine,
                    bool                                visible,
                    bool                                enableVsync) :
     m_pRenderEngine{std::move(pRenderEngine)},
-    m_pScene{pScene}
+    m_pScene{pScene},
+    m_oidn{&delegate::OpenImageDenoiser::getInstance()}
 {
     glfwSetErrorCallback(glfw_error_callback);
 
@@ -699,7 +701,12 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
                 GL_CHECK(glReadPixels(0, 0, filmSize.first, filmSize.second, GL_RGBA, GL_FLOAT, pixels));*/
             auto pixels = this->m_pRenderEngine->readbackFramebuffer();
             std::pair<uint32_t, uint32_t> filmSize = this->m_pRenderEngine->getFilmSize();
-            colvillea::delegate::ImageUtils::saveImageToDisk(pixels.get(), filmSize.first, filmSize.second, "test.exr");
+
+            colvillea::delegate::ImageUtils::saveImageToDisk(pixels.get(), filmSize.first, filmSize.second, "output-raw.exr");
+
+            this->m_oidn->denoiseHDRInPlace(pixels.get(), filmSize.first, filmSize.second);
+
+            colvillea::delegate::ImageUtils::saveImageToDisk(pixels.get(), filmSize.first, filmSize.second, "output-denoised.exr");
         }
 
         // Rendering

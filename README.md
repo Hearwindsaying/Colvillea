@@ -10,7 +10,7 @@
 
  - Learn and practice with rendering algorithms. Implementing rendering algorithms from scratch helps a deep understanding of the rendering.
 
- - Practice with technologies from the industry. Besides learning rendering algorithms from the textbook, play with and integration new engineering technologies from the industry makes **Colvillea* developed from a toy path tracer to a real production renderer.
+ - Practice with technologies from the industry. Besides learning rendering algorithms from the textbook, play with and integration new engineering technologies from the industry makes **Colvillea** developed from a toy path tracer to a real production renderer.
 
 ## Collaries
  - Conciseness and Elegance.
@@ -87,6 +87,12 @@ These could be downloaded from NVIDIA and you may also need a decent GPU driver.
  * doxygen
 
 Doxygen could be used to generate documents. Please refer to `\docs\doxyfile` for doxygen inputs. Note that we should add doxygen to continuous integration and hosting API documents in the future.
+
+### Building the Code
+After cloning the repository and resolving dependencies above, **Colvillea** could be built from Windows 10/11 with MSVC compiler supporting CUDA 11+ and C++17. So start with CMake and good luck!
+
+## Docs
+See also `docs\` or the documentation.
 
 ## References
 [NVIDIA OptiX](https://developer.nvidia.com/optix)
