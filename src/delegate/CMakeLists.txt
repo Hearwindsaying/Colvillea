@@ -1,13 +1,17 @@
+find_package(OpenImageDenoise)
+
 set(CORE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 
 set(INTERFACE_DELEGATE
     ${CORE_INCLUDE_DIR}/delegate/meshimporter.h
     ${CORE_INCLUDE_DIR}/delegate/imageutil.h
+    ${CORE_INCLUDE_DIR}/delegate/denoiser.h
 )
 
 set(SOURCE_DELEGATE
     meshimporter.cpp
     imageutil.cpp
+    denoiser.cpp
 )
 
 
@@ -43,6 +47,8 @@ PUBLIC
     stb_image
     # FreeImage
     ${FREEIMAGE_LIB_DIR}
+    # OpenImageDenoise
+    OpenImageDenoise
 )
 
 
