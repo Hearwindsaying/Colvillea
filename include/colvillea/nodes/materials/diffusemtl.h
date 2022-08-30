@@ -20,12 +20,12 @@ class DiffuseMtl : public Material
 {
 public:
     DiffuseMtl(Scene* pScene, const vec3f& reflectance) :
-        Material{pScene, MaterialType::Diffuse},
+        Material{pScene, kernel::MaterialType::Diffuse},
         m_reflectance(reflectance)
     {}
 
     DiffuseMtl(Scene* pScene, const std::shared_ptr<Texture>& reflectanceTex) :
-        Material{pScene, MaterialType::Diffuse},
+        Material{pScene, kernel::MaterialType::Diffuse},
         m_reflectanceTex{reflectanceTex}
     {}
 
@@ -43,12 +43,24 @@ public:
 
     virtual kernel::Material compile() const noexcept override
     {
+        kernel::Material mtl;
+
         if (this->m_reflectanceTex)
         {
-            return kernel::Material{kernel::DiffuseMtl{this->m_reflectanceTex->compile()}};
+            mtl = kernel::Material{kernel::DiffuseMtl{this->m_reflectanceTex->compile()}};
+        }
+        else
+        {
+            mtl = kernel::Material{kernel::DiffuseMtl{this->m_reflectance}};
         }
 
-        return kernel::Material{kernel::DiffuseMtl{this->m_reflectance}};
+        // Common setting.
+        if (this->m_normalmapTex)
+        {
+            mtl.setNormalmap(this->m_normalmapTex->compile());
+        }
+
+        return mtl;
     }
 
 private:

@@ -42,10 +42,12 @@ class Image
 public:
     Image(ImageTextureChannelFormat channelFormat,
           std::vector<std::byte>&&  data,
-          const vec2ui&             resolution) :
+          const vec2ui&             resolution,
+          const bool                sRGB) :
         m_resolution{resolution},
         m_imageData{std::move(data)},
-        m_channelFormat{channelFormat}
+        m_channelFormat{channelFormat},
+        m_sRGB{sRGB}
     {}
 
     /**
@@ -121,6 +123,11 @@ public:
         return this->m_resolution;
     }
 
+    bool getIsSRGB() const noexcept
+    {
+        return this->m_sRGB;
+    }
+
     const std::byte* getImageData() const noexcept
     {
         return this->m_imageData.data();
@@ -138,6 +145,9 @@ private:
 
     /// TODO: We assume that no extra padding exists in the image.
     static constexpr bool m_paddingSupport{false};
+
+    /// sRGB color space?
+    bool m_sRGB{false};
 };
 
 class Texture : public Node

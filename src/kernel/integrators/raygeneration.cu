@@ -311,23 +311,34 @@ __global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterial
 
     DirectSamplingRecord dRec{};
 
+    /*bool print = false;
+    vec2ui pixelPosi = pixelIndexToPixelPos(evalMtlsWork.pixelIndex, kernel::fbWidth);
+    if (pixelPosi.x == static_cast<uint32_t>(kernel::mousePos.x) &&
+        pixelPosi.y == static_cast<uint32_t>(kernel::mousePos.y))
+    {
+        print = true;
+    }*/
+
+    Frame shadingFrame = evalMtlsWork.material->getShadingFrame(evalMtlsWork.dpdu,
+                                                                evalMtlsWork.dpdv,
+                                                                evalMtlsWork.ns,
+                                                                evalMtlsWork.ng,
+                                                                evalMtlsWork.uv,
+                                                                false);
+
     //#ifdef DIRECT_LIGHTING
     // Current BSDF must be smooth and without dirac term.
     vec3f value = LightSampler::sampleEmitterDirect(emitters, numEmitters, &dRec, sample);
     if ((value.x > 0.0f || value.y > 0.0f || value.z > 0.0f) && dRec.pdf > 0.0f)
     {
-        Frame shadingFrame{evalMtlsWork.dpdv, evalMtlsWork.dpdu, evalMtlsWork.ns};
-
         /*printf("tangent: %f %f %f, bitangent :%f %f %f, normal: %f %f %f\n",
                shadingFrame.t.x, shadingFrame.t.y, shadingFrame.t.z,
                shadingFrame.s.x, shadingFrame.s.y, shadingFrame.s.z,
                shadingFrame.n.x, shadingFrame.n.y, shadingFrame.n.z);*/
 
         BSDFSamplingRecord bsdfSamplingRecord{
-            /* outgoing dir */
             shadingFrame.toLocal(dRec.direction),
 
-            /* incoming dir */
             shadingFrame.toLocal(evalMtlsWork.wo)};
 
         /*printf("wiLocal: %f %f %f, woLocal: %f %f %f\n",
@@ -343,7 +354,7 @@ __global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterial
             float weight    = MISWeightBalanced(dRec.pdf /* / numEmitters*/ /* Brute force sampling. TODO: Remove this and add to sampler. */, bsdfPdf);
 
             const vec3f& throughput = evalMtlsWork.pathThroughput;
-            assert(throughput.x != 0.0f && throughput.y != 0.0f && throughput.z != 0.0f);
+            assert(throughput.x != 0.0f || throughput.y != 0.0f || throughput.z != 0.0f);
 
             vec3f Li = throughput * value * bsdfVal * abs(Frame::cosTheta(bsdfSamplingRecord.wiLocal)) * weight / dRec.pdf;
             //Li = vec3f{1.0f, 0.0f, 0.0f};
@@ -377,8 +388,6 @@ __global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterial
     //// Fetch new random samples for bsdf sampling.
     sample = Sampler::next2D(randSeed);
 
-    Frame shadingFrame{evalMtlsWork.dpdv, evalMtlsWork.dpdu, evalMtlsWork.ns};
-
     BSDFSamplingRecord bsdfSamplingRecord{};
     bsdfSamplingRecord.woLocal = shadingFrame.toLocal(evalMtlsWork.wo);
 
@@ -395,7 +404,7 @@ __global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterial
                    bsdfSamplingRecord.wiLocal.x, bsdfSamplingRecord.wiLocal.y, bsdfSamplingRecord.wiLocal.z);
             assert(false);
         }
-        
+
         Ray indirectRay{};
         indirectRay.o    = evalMtlsWork.pHit;
         indirectRay.d    = shadingFrame.toWorld(bsdfSamplingRecord.wiLocal);

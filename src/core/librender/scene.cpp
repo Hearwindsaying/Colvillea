@@ -92,12 +92,12 @@ std::shared_ptr<Texture> Scene::createTexture(kernel::TextureType type, const Im
     return texture;
 }
 
-std::shared_ptr<Material> Scene::createMaterial(MaterialType type, const vec3f& reflectance)
+std::shared_ptr<Material> Scene::createMaterial(kernel::MaterialType type, const vec3f& reflectance)
 {
     std::shared_ptr<Material> material;
     switch (type)
     {
-        case MaterialType::Diffuse:
+        case kernel::MaterialType::Diffuse:
             material = std::make_shared<DiffuseMtl>(this, reflectance);
             break;
         default:
@@ -110,13 +110,13 @@ std::shared_ptr<Material> Scene::createMaterial(MaterialType type, const vec3f& 
     return material;
 }
 
-std::shared_ptr<Material> Scene::createMaterial(MaterialType                    type,
+std::shared_ptr<Material> Scene::createMaterial(kernel::MaterialType            type,
                                                 const std::shared_ptr<Texture>& reflectanceTex)
 {
     std::shared_ptr<Material> material;
     switch (type)
     {
-        case MaterialType::Diffuse:
+        case kernel::MaterialType::Diffuse:
             material = std::make_shared<DiffuseMtl>(this, reflectanceTex);
             break;
         default:

@@ -13,7 +13,7 @@ namespace delegate
 class ImageUtils
 {
 public:
-    static core::Image loadImageFromDisk(const std::filesystem::path& imageFile);
+    static core::Image loadImageFromDisk(const std::filesystem::path& imageFile, bool isSRGB);
 
     /**
      * \brief.
@@ -27,12 +27,12 @@ public:
                                             size_t                       height,
                                             const std::filesystem::path& imageFile);
 
-    static core::Image loadTest2x2Image();
+    static core::Image loadTest2x2Image(bool isSRGB);
 
 protected:
-    static core::Image loadImageFromDiskRadianceHDR(const std::filesystem::path& imageFile);
+    static core::Image loadImageFromDiskRadianceHDR(const std::filesystem::path& imageFile, bool isSRGB);
 
-    static core::Image loadImageFromDiskLDR(const std::filesystem::path& imageFile);
+    static core::Image loadImageFromDiskLDR(const std::filesystem::path& imageFile, bool isSRGB);
 };
 } // namespace delegate
 } // namespace colvillea

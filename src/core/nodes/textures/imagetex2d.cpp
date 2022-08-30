@@ -62,7 +62,7 @@ ImageTexture2D::ImageTexture2D(Scene* pScene, const Image& image) :
     texDesc.mipmapFilterMode    = cudaFilterModeLinear;
     texDesc.borderColor[0] = texDesc.borderColor[1] = texDesc.borderColor[2] =
         texDesc.borderColor[3]                      = 0.f;
-    texDesc.sRGB                                    = 1;
+    texDesc.sRGB                                    = image.getIsSRGB();
 
     // Create texture object.
     CHECK_CUDA_CALL(cudaCreateTextureObject(&this->m_cudaTextureObj, &resDesc, &texDesc, nullptr));

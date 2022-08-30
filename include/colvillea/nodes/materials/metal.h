@@ -26,7 +26,7 @@ public:
              const RoughnessType&           roughness,
              const vec3f&                   eta,
              const vec3f&                   k) :
-        Material{pScene, MaterialType::Metal},
+        Material{pScene, kernel::MaterialType::Metal},
         m_eta{eta},
         m_k{k}
     {
@@ -68,18 +68,32 @@ public:
 
     virtual kernel::Material compile() const noexcept override
     {
+        // TODO: Add a base function for common parameters.
+
         // TODO: Fix this: too many combinations.
         if (this->m_specularReflectanceTex)
         {
             assert(false);
         }
 
+        kernel::Material mtl;
+
         if (this->m_roughnessTex)
         {
-            return kernel::Material{kernel::MetalMtl{this->m_specularReflectance, this->m_roughnessTex->compile(), this->m_eta, this->m_k}};
+            mtl = kernel::MetalMtl{this->m_specularReflectance, this->m_roughnessTex->compile(), this->m_eta, this->m_k};
+        }
+        else
+        {
+            mtl = kernel::Material{kernel::MetalMtl{this->m_specularReflectance, this->m_roughness, this->m_eta, this->m_k}};
         }
 
-        return kernel::Material{kernel::MetalMtl{this->m_specularReflectance, this->m_roughness, this->m_eta, this->m_k}};
+        // Common setting.
+        if (this->m_normalmapTex)
+        {
+            mtl.setNormalmap(this->m_normalmapTex->compile());
+        }
+
+        return mtl;
     }
 
 private:

@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
     auto objMeshes = delegate::MeshImporter::loadMeshes(pSceneViewer, dir / "cornell-box.obj");
     //std::shared_ptr<core::TriangleMesh> cubeMesh = delegate::MeshImporter::loadDefaultCube();
 
-    auto image = delegate::ImageUtils::loadImageFromDisk(dir / "bamboo-wood-semigloss-albedo.tga");
+    auto image = delegate::ImageUtils::loadImageFromDisk(dir / "bamboo-wood-semigloss-albedo.tga", true);
     //auto texture = delegate::ImageUtils::loadTest2x2Image();
     auto texture = pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, image);
 
@@ -221,14 +221,29 @@ int main(int argc, char* argv[])
                                                                                   vec3f{0.056f, 0.054f, 0.046878f},
                                                                                   vec3f{4.2543f, 3.4290f, 2.8028f});
 
-    for (const auto& triMesh : objMeshes)
+    /*for (const auto& triMesh : objMeshes)
     {
         pSceneViewer->createEntity(triMesh, pMaterial);
+    }*/
+
+    {
+        auto normalmapImage   = delegate::ImageUtils::loadImageFromDisk(dir / "normalmap.tga", false);
+        auto normalmapTexture = pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, normalmapImage);
+
+        /*std::shared_ptr<core::Material> pNormalMapMaterial = pSceneViewer->createMaterial(kernel::MaterialType::Diffuse, vec3f{0.8f});*/
+        std::shared_ptr<core::Material> pNormalMapMaterial = pSceneViewer->createMaterial(kernel::MaterialType::Diffuse, vec3f{0.75f});
+        pNormalMapMaterial->setNormalmap(normalmapTexture);
+
+        auto normalmapPlaneMeshes = delegate::MeshImporter::loadMeshes(pSceneViewer, dir / "normalmap_plane.obj");
+        for (const auto& triMesh : normalmapPlaneMeshes)
+        {
+            pSceneViewer->createEntity(triMesh, pNormalMapMaterial);
+        }
     }
 
     //pSceneViewer->createEmitter(kernel::EmitterType::Directional, vec3f{1000.0f}, normalize(vec3f{-1, -1, 0}), 450.f);
 
-    auto skyImg = delegate::ImageUtils::loadImageFromDisk(dir / "venice_sunset_2k.hdr");
+    auto skyImg = delegate::ImageUtils::loadImageFromDisk(dir / "venice_sunset_2k.hdr", false);
     auto skyTex = pSceneViewer->createTexture(kernel::TextureType::ImageTexture2D, skyImg);
     pSceneViewer->createEmitter(kernel::EmitterType::HDRIDome, skyTex);
 

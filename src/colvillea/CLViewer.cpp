@@ -642,6 +642,8 @@ void CLViewer::showAndRun(std::function<bool()> keepgoing)
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
+            ImGui::Text("Mouse position: %f %f", ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+
 #ifdef RAY_TRACING_DEBUGGING
             float msCount = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - snapshot).count();
             snapshot      = std::chrono::steady_clock::now();

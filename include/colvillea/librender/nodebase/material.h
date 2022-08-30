@@ -18,26 +18,24 @@ using vec3ui = owl::common::vec3ui;
 
 class Texture;
 
-enum class MaterialType : uint32_t
-{
-    /// Unknown material type (default value)
-    None = 0,
-
-    /// Diffuse material
-    Diffuse,
-
-    /// Metal material
-    Metal
-};
-
 class Material : public Node
 {
 public:
-    Material(Scene* pScene, MaterialType type) :
+    Material(Scene* pScene, kernel::MaterialType type) :
         Node {pScene},
         m_materialType{type} {}
 
-    MaterialType getMaterialType() const noexcept
+    const std::shared_ptr<Texture> getNormalmap() const noexcept
+    {
+        return this->m_normalmapTex;
+    }
+
+    void setNormalmap(const std::shared_ptr<Texture> normalmap)
+    {
+        this->m_normalmapTex = normalmap;
+    }
+
+    kernel::MaterialType getMaterialType() const noexcept
     {
         return this->m_materialType;
     }
@@ -46,8 +44,10 @@ public:
 
     virtual kernel::Material compile() const noexcept = 0;
 
-private:
-    MaterialType m_materialType{MaterialType::None};
+protected:
+    kernel::MaterialType m_materialType{kernel::MaterialType::Unknown};
+
+    std::shared_ptr<Texture> m_normalmapTex;
 };
 } // namespace core
 } // namespace colvillea

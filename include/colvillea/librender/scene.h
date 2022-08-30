@@ -159,9 +159,9 @@ public:
      * \param reflectance
      * \return 
      */
-    std::shared_ptr<Material> createMaterial(MaterialType type, const vec3f& reflectance);
+    std::shared_ptr<Material> createMaterial(kernel::MaterialType type, const vec3f& reflectance);
 
-    std::shared_ptr<Material> createMaterial(MaterialType type, const std::shared_ptr<Texture>& reflectanceTex);
+    std::shared_ptr<Material> createMaterial(kernel::MaterialType type, const std::shared_ptr<Texture>& reflectanceTex);
 
     std::shared_ptr<Material> createMetalMaterial(const vec3f& specularReflectance, const std::shared_ptr<Texture>& roughness, const vec3f& eta, const vec3f& k);
 

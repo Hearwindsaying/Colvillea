@@ -245,8 +245,15 @@ OPTIX_MISS_PROGRAM(primaryRay)
     const int      pixelIndex = rayWork.pixelIndex;
 
     assert(optixLaunchParams.rayEscapedWorkQueue != nullptr);
+
+    if (!(rayWork.pathThroughput.x > 0.0f || rayWork.pathThroughput.y > 0.0f || rayWork.pathThroughput.z > 0.0f))
+    {
+        printf("raywork.pathThroughput %f %f %f\n", rayWork.pathThroughput.x, rayWork.pathThroughput.y, rayWork.pathThroughput.z);
+    }
     assert(rayWork.pathDepth > 0 &&
-           rayWork.pathThroughput.x > 0.0f && rayWork.pathThroughput.y > 0.0f && rayWork.pathThroughput.z > 0.0f);
+           rayWork.pathThroughput.x > 0.0f || rayWork.pathThroughput.y > 0.0f || rayWork.pathThroughput.z > 0.0f);
+    
+
     optixLaunchParams.rayEscapedWorkQueue->pushWorkItem(RayEscapedWork{optixGetWorldRayDirection(),
                                                                        pixelIndex,
                                                                        rayWork.pathDepth,

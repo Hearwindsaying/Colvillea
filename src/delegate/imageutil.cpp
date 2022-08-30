@@ -10,7 +10,7 @@ namespace colvillea
 namespace delegate
 {
 
-core::Image ImageUtils::loadImageFromDisk(const std::filesystem::path& imageFile)
+core::Image ImageUtils::loadImageFromDisk(const std::filesystem::path& imageFile, bool isSRGB)
 {
     int x{}, y{}, n{};
 
@@ -20,11 +20,11 @@ core::Image ImageUtils::loadImageFromDisk(const std::filesystem::path& imageFile
 
     if (isHDRFormat)
     {
-        return ImageUtils::loadImageFromDiskRadianceHDR(imageFile);
+        return ImageUtils::loadImageFromDiskRadianceHDR(imageFile, isSRGB);
     }
     else
     {
-        return ImageUtils::loadImageFromDiskLDR(imageFile);
+        return ImageUtils::loadImageFromDiskLDR(imageFile, isSRGB);
     }
 }
 
@@ -78,7 +78,7 @@ void ImageUtils::saveImageToDisk(void*                        ptr,
     FreeImage_Unload(bitmap);
 }
 
-core::Image ImageUtils::loadTest2x2Image()
+core::Image ImageUtils::loadTest2x2Image(bool isSRGB)
 {
     std::vector<uint8_t> hData{
         1, 2, 3, 1, 7, 8, 9, 1,
@@ -90,13 +90,16 @@ core::Image ImageUtils::loadTest2x2Image()
 
     core::Image image{core::ImageTextureChannelFormat::RGBAU8,
                       std::move(pixels),
-                      core::vec2ui(width, height)};
+                      core::vec2ui(width, height), isSRGB};
 
     return image;
 }
 
-core::Image ImageUtils::loadImageFromDiskRadianceHDR(const std::filesystem::path& imageFile)
+core::Image ImageUtils::loadImageFromDiskRadianceHDR(const std::filesystem::path& imageFile, bool isSRGB)
 {
+    // HDR should never be sRGB.
+    assert(!isSRGB);
+
     int x{}, y{}, n{};
 
     // HDR Always RGB.
@@ -128,14 +131,14 @@ core::Image ImageUtils::loadImageFromDiskRadianceHDR(const std::filesystem::path
 
     core::Image image{core::ImageTextureChannelFormat::RGBA32F,
                       std::move(pixels),
-                      core::vec2ui(x, y)};
+                      core::vec2ui(x, y), isSRGB};
 
     stbi_image_free(data);
 
     return image;
 }
 
-core::Image ImageUtils::loadImageFromDiskLDR(const std::filesystem::path& imageFile)
+core::Image ImageUtils::loadImageFromDiskLDR(const std::filesystem::path& imageFile, bool isSRGB)
 {
     int x{}, y{}, n{};
 
@@ -167,7 +170,7 @@ core::Image ImageUtils::loadImageFromDiskLDR(const std::filesystem::path& imageF
 
     core::Image image{core::ImageTextureChannelFormat::RGBAU8,
                       std::move(pixels),
-                      core::vec2ui(x, y)};
+                      core::vec2ui(x, y), isSRGB};
 
     stbi_image_free(data);
 
