@@ -194,6 +194,100 @@ CL_CPU_GPU CL_INLINE vec3f fresnelConductor(const float& cosThetaI, const vec3f&
 
 /**
  * \brief
+ *    Compute Fresnel coefficients for dielectrics. This is
+ * reflection part, and for the transmission part it should be
+ * 1.0 - fr. Adapted from Mitsuba 0.6 but you do not need to
+ * provide cosThetaT_ and do not need to check TIR.
+ * 
+ * \param cosThetaI_
+ *    Incident ray (negative value is acceptable).
+ * \param eta (Strictly follow definition)
+ *    eta = interiorIOR/exteriorIOR or etaT/etaI.
+ * \return 
+ */
+CL_CPU_GPU CL_INLINE float fresnelDielectric(float cosThetaI_, float eta)
+{
+    if (eta == 1)
+    {
+        return 0.0f;
+    }
+
+    /* Using Snell's law, calculate the squared sine of the
+       angle between the normal and the transmitted ray */
+    float scale        = (cosThetaI_ > 0) ? 1 / eta : eta,
+          cosThetaTSqr = 1 - (1 - cosThetaI_ * cosThetaI_) * (scale * scale);
+
+    /* Check for total internal reflection */
+    if (cosThetaTSqr <= 0.0f)
+    {
+        return 1.0f;
+    }
+
+    /* Find the absolute cosines of the incident/transmitted rays */
+    float cosThetaI = std::abs(cosThetaI_);
+    float cosThetaT = std::sqrt(cosThetaTSqr);
+
+    float Rs = (cosThetaI - eta * cosThetaT) / (cosThetaI + eta * cosThetaT);
+    float Rp = (eta * cosThetaI - cosThetaT) / (eta * cosThetaI + cosThetaT);
+
+    /* No polarization -- return the unpolarized reflectance */
+    return 0.5f * (Rs * Rs + Rp * Rp);
+}
+
+/**
+ * \brief
+ *    Compute Fresnel coefficients for dielectrics. This is
+ * reflection part, and for the transmission part it should be
+ * 1.0 - fr. Adapted from Mitsuba 0.6 but you do not need to
+ * provide cosThetaT_ and do not need to check TIR.
+ * 
+ * \param[in] cosThetaI_
+ *    Incident ray (negative value is acceptable).
+ * 
+ * \param[out] cosThetaT_
+ *    Refractive ray angle (negative value is acceptable).
+ * 
+ * \param[in] eta (Strictly follow definition)
+ *    eta = interiorIOR/exteriorIOR or etaT/etaI.
+ * 
+ * \return 
+ */
+CL_CPU_GPU CL_INLINE float fresnelDielectricExt(float cosThetaI_, float* cosThetaT_, float eta)
+{
+    if (eta == 1)
+    {
+        *cosThetaT_ = -cosThetaI_;
+        return 0.0f;
+    }
+
+    /* Using Snell's law, calculate the squared sine of the
+       angle between the normal and the transmitted ray */
+    float scale        = (cosThetaI_ > 0) ? 1 / eta : eta,
+          cosThetaTSqr = 1 - (1 - cosThetaI_ * cosThetaI_) * (scale * scale);
+
+    /* Check for total internal reflection */
+    if (cosThetaTSqr <= 0.0f)
+    {
+        *cosThetaT_ = 0.0f;
+        return 1.0f;
+    }
+
+    /* Find the absolute cosines of the incident/transmitted rays */
+    float cosThetaI = std::abs(cosThetaI_);
+    float cosThetaT = std::sqrt(cosThetaTSqr);
+
+    float Rs = (cosThetaI - eta * cosThetaT) / (cosThetaI + eta * cosThetaT);
+    float Rp = (eta * cosThetaI - cosThetaT) / (eta * cosThetaI + cosThetaT);
+
+    // refracted angle should be in the different hemisphere.
+    *cosThetaT_ = (cosThetaI_ > 0) ? -cosThetaT : cosThetaT;
+
+    /* No polarization -- return the unpolarized reflectance */
+    return 0.5f * (Rs * Rs + Rp * Rp);
+}
+
+/**
+ * \brief
  *    Reflect \ref wo about \ref n. Both directions
  * are facing outwards but they do not concern about
  * spaces they live (world/local does not matter).
@@ -205,6 +299,33 @@ CL_CPU_GPU CL_INLINE vec3f fresnelConductor(const float& cosThetaI, const vec3f&
 CL_CPU_GPU CL_INLINE vec3f reflect(const vec3f& wo, const vec3f& n)
 {
     return -wo + 2.0f * dot(wo, n) * n;
+}
+
+/**
+ * \brief.
+ *    Refract \wi according to \n and \eta. You should
+ * check for TIR!
+ * 
+ * \param wi
+ * \param n
+ * \param[in] eta (Strictly follow definition)
+ *    eta = interiorIOR/exteriorIOR or etaT/etaI.
+ * \param cosThetaT
+ *    Input parameter: dot(refractedVector, n). This could
+ * come from fresnel (negative value is possible).
+ * \return 
+ */
+CL_CPU_GPU CL_INLINE vec3f refract(const vec3f& wi,
+                                   const vec3f& n,
+                                   float        eta,
+                                   const float  cosThetaT)
+{
+    if (cosThetaT < 0.0f)
+    {
+        eta = 1.0f / eta;
+    }
+
+    return -eta * wi + (eta * dot(wi, n) + cosThetaT) * n;
 }
 
 } // namespace kernel

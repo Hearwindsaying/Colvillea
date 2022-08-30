@@ -22,6 +22,7 @@ set(INTERFACE_NODES_SHAPES
 set(INTERFACE_NODES_MATERIALS
     ${CORE_INCLUDE_DIR}/nodes/materials/diffusemtl.h
     ${CORE_INCLUDE_DIR}/nodes/materials/metal.h
+    ${CORE_INCLUDE_DIR}/nodes/materials/glass.h
 )
 
 set(INTERFACE_NODES_EMITTERS
@@ -80,6 +81,7 @@ set(SOURCE_NODES_SHAPES
 set(SOURCE_NODES_MATERIALS
     nodes/materials/diffusemtl.cpp
     nodes/materials/metal.cpp
+    nodes/materials/glass.cpp
 )
 
 set(SOURCE_NODES_EMITTERS

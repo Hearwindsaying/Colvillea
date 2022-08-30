@@ -2,6 +2,7 @@
 
 #include <libkernel/bsdfs/smoothdiffuse.h>
 #include <libkernel/bsdfs/roughconductor.h>
+#include <libkernel/bsdfs/roughdielectric.h>
 
 namespace colvillea
 {
@@ -21,6 +22,9 @@ enum class BSDFType : uint32_t
     /// Rough Conductor
     RoughConductor,
 
+    /// Rough Dielectric
+    RoughDielectric,
+
     /// Unknown bsdf type.
     Unknown
 };
@@ -38,6 +42,9 @@ public:
     CL_CPU_GPU CL_INLINE BSDF(const RoughConductor& bsdf) :
         m_bsdfTag{BSDFType::RoughConductor}, m_roughConductor{bsdf} {}
 
+    CL_CPU_GPU CL_INLINE BSDF(const RoughDielectric& bsdf) :
+        m_bsdfTag{BSDFType::RoughDielectric}, m_roughDielectric{bsdf} {}
+
     CL_CPU_GPU CL_INLINE vec3f
     eval(const BSDFSamplingRecord& bRec) const
     {
@@ -47,6 +54,8 @@ public:
                 return this->m_smoothDiffuse.eval(bRec);
             case BSDFType::RoughConductor:
                 return this->m_roughConductor.eval(bRec);
+            case BSDFType::RoughDielectric:
+                return this->m_roughDielectric.eval(bRec);
             default:
                 assert(false);
                 return vec3f{0.0f};
@@ -61,6 +70,8 @@ public:
                 return this->m_smoothDiffuse.pdf(bRec);
             case BSDFType::RoughConductor:
                 return this->m_roughConductor.pdf(bRec);
+            case BSDFType::RoughDielectric:
+                return this->m_roughDielectric.pdf(bRec);
             default:
                 assert(false);
                 return 0.0f;
@@ -76,6 +87,8 @@ public:
                 return this->m_smoothDiffuse.sample(bRec, pdf, sample);
             case BSDFType::RoughConductor:
                 return this->m_roughConductor.sample(bRec, pdf, sample);
+            case BSDFType::RoughDielectric:
+                return this->m_roughDielectric.sample(bRec, pdf, sample);
             default:
                 assert(false);
                 return 0.0f;
@@ -87,8 +100,9 @@ private:
     BSDFType m_bsdfTag{BSDFType::Unknown};
     union
     {
-        SmoothDiffuse  m_smoothDiffuse;
-        RoughConductor m_roughConductor;
+        SmoothDiffuse   m_smoothDiffuse;
+        RoughConductor  m_roughConductor;
+        RoughDielectric m_roughDielectric;
     };
 };
 

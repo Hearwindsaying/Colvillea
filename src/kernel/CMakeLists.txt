@@ -22,6 +22,7 @@ set(INTERFACE_BASE
 set(INTERFACE_BSDFS
     ${KERNEL_INCLUDE_DIR}/libkernel/bsdfs/smoothdiffuse.h
     ${KERNEL_INCLUDE_DIR}/libkernel/bsdfs/roughconductor.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/bsdfs/roughdielectric.h
 )
 
 set(INTERFACE_SHAPES
@@ -35,6 +36,7 @@ set(INTERFACE_INTEGRATORS
 set(INTERFACE_MATERIALS
     ${KERNEL_INCLUDE_DIR}/libkernel/materials/diffusemtl.h
     ${KERNEL_INCLUDE_DIR}/libkernel/materials/metal.h
+    ${KERNEL_INCLUDE_DIR}/libkernel/materials/glass.h
 )
 
 set(INTERFACE_EMITTERS
@@ -64,6 +66,7 @@ set(SOURCE_INTEGRATORS
 set(SOURCE_BSDFS
     bsdfs/smoothdiffuse.cpp
     bsdfs/roughconductor.cpp
+    bsdfs/roughdielectric.cpp
 )
 
 set(SOURCE_EMITTERS
@@ -73,6 +76,7 @@ set(SOURCE_EMITTERS
 set(SOURCE_MATERIALS
     materials/diffusemtl.cpp
     materials/metal.cpp
+    materials/glass.cpp
 )
 
 set(SOURCE_TEXTURES

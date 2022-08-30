@@ -3,6 +3,7 @@
 #include <nodes/shapes/trianglemesh.h>
 #include <nodes/materials/diffusemtl.h>
 #include <nodes/materials/metal.h>
+#include <nodes/materials/glass.h>
 #include <nodes/emitters/directional.h>
 #include <nodes/emitters/hdridome.h>
 #include <nodes/textures/imagetex2d.h>
@@ -135,6 +136,18 @@ std::shared_ptr<Material> Scene::createMaterial(kernel::MaterialType            
 std::shared_ptr<Material> Scene::createMetalMaterial(const vec3f& specularReflectance, const std::shared_ptr<Texture>& roughness, const vec3f& eta, const vec3f& k)
 {
     std::shared_ptr<Material> material = std::make_shared<MetalMtl>(this, specularReflectance, roughness, eta, k);
+
+    this->addMaterial(material);
+
+    // Note that texture must already be in the texture cache.
+    // No need to invoke addTexture().
+
+    return material;
+}
+
+std::shared_ptr<Material> colvillea::core::Scene::createGlassMaterial(const float roughness, const float interiorIOR)
+{
+    std::shared_ptr<Material> material = std::make_shared<GlassMtl>(this, roughness, interiorIOR);
 
     this->addMaterial(material);
 

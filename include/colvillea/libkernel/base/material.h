@@ -10,6 +10,8 @@
 #include <libkernel/base/config.h>
 #include <libkernel/materials/diffusemtl.h>
 #include <libkernel/materials/metal.h>
+#include <libkernel/materials/glass.h>
+
 
 namespace colvillea
 {
@@ -26,6 +28,9 @@ enum class MaterialType : uint32_t
 
     /// Metal material type.
     Metal,
+
+    /// Glass material type.
+    Glass,
 
     /// Unknown material type.
     Unknown
@@ -54,6 +59,11 @@ public:
     {
     }
 
+    CL_CPU_GPU Material(const GlassMtl& material) :
+        m_materialType{MaterialType::Glass}, m_glassMtl{material}
+    {
+    }
+
     CL_CPU_GPU Material& operator=(const Material& material)
     {
         this->m_materialType = material.m_materialType;
@@ -65,6 +75,9 @@ public:
                 break;
             case MaterialType::Metal:
                 this->m_metalMtl = material.m_metalMtl;
+                break;
+            case MaterialType::Glass:
+                this->m_glassMtl = material.m_glassMtl;
                 break;
             default:
                 assert(false);
@@ -87,6 +100,8 @@ public:
                 return this->m_diffuseMtl.getBSDF(uv);
             case MaterialType::Metal:
                 return this->m_metalMtl.getBSDF(uv);
+            case MaterialType::Glass:
+                return this->m_glassMtl.getBSDF(uv);
             default:
                 assert(false);
         }
@@ -278,6 +293,7 @@ private:
     {
         DiffuseMtl m_diffuseMtl;
         MetalMtl   m_metalMtl;
+        GlassMtl   m_glassMtl;
     };
 
     Texture m_normalmapTex{};

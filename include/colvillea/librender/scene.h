@@ -165,6 +165,8 @@ public:
 
     std::shared_ptr<Material> createMetalMaterial(const vec3f& specularReflectance, const std::shared_ptr<Texture>& roughness, const vec3f& eta, const vec3f& k);
 
+    std::shared_ptr<Material> createGlassMaterial(const float roughness, const float interiorIOR);
+
     std::shared_ptr<Material> createMetalMaterial(const vec3f& specularReflectance, const float roughness, const vec3f& eta, const vec3f& k);
 
     template <typename VertsVecType, typename TrisVecType, typename NormalsVecType, typename TangentsVecType, typename UVsVecType>
