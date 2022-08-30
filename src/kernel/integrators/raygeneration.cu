@@ -7,6 +7,7 @@
 
 #include <owl/owl_device.h>
 
+#include <libkernel/base/config.h>
 #include <libkernel/base/owldefs.h>
 #include <libkernel/base/ray.h>
 #include <libkernel/base/material.h>
@@ -207,7 +208,7 @@ __global__ void evaluateMaterialsAndLightsDirectLighting(SOAProxyQueue<EvalMater
             //       Li.x, bsdfVal.x, Frame::cosTheta(bsdfSamplingRecord.wiLocal), weight, dRec.pdf);
 
             Ray shadowRay{evalMtlsWork.pHit, dRec.direction};
-            shadowRay.mint = 0.001f;
+            shadowRay.mint = kRayTOffsetEpsilon();
 
             // Enqueue shadow ray after computing tentative radiance contribution.
             int entry = evalShadowRayWorkMISLightQueue->pushWorkItem(EvalShadowRayWork{shadowRay, Li, evalMtlsWork.pixelIndex});
@@ -246,7 +247,7 @@ __global__ void evaluateMaterialsAndLightsDirectLighting(SOAProxyQueue<EvalMater
         Ray shadowRay{};
         shadowRay.o    = evalMtlsWork.pHit;
         shadowRay.d    = shadingFrame.toWorld(bsdfSamplingRecord.wiLocal);
-        shadowRay.mint = 0.001;
+        shadowRay.mint = kRayTOffsetEpsilon();
 
         dRec           = DirectSamplingRecord{0.0f, shadowRay.d, SamplingMeasure::SolidAngle};
         float lightPdf = domeEmitter->pdfDirect(dRec);
@@ -319,7 +320,9 @@ __global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterial
         print = true;
     }*/
 
-    Frame shadingFrame = evalMtlsWork.material->getShadingFrame(evalMtlsWork.dpdu,
+    // TODO: ng should not be used anymore.
+    Frame shadingFrame = evalMtlsWork.material->getShadingFrame(evalMtlsWork.wo,
+                                                                evalMtlsWork.dpdu,
                                                                 evalMtlsWork.dpdv,
                                                                 evalMtlsWork.ns,
                                                                 evalMtlsWork.ng,
@@ -362,7 +365,7 @@ __global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterial
             //       Li.x, bsdfVal.x, Frame::cosTheta(bsdfSamplingRecord.wiLocal), weight, dRec.pdf);
 
             Ray shadowRay{evalMtlsWork.pHit, dRec.direction};
-            shadowRay.mint = 0.001f;
+            shadowRay.mint = kRayTOffsetEpsilon();
 
             // Enqueue shadow ray after computing tentative radiance contribution.
             int entry = evalShadowRayWorkMISLightQueue->pushWorkItem(EvalShadowRayWork{shadowRay, Li, evalMtlsWork.pixelIndex});
@@ -408,7 +411,7 @@ __global__ void evaluateMaterialsAndLightsPathTracing(SOAProxyQueue<EvalMaterial
         Ray indirectRay{};
         indirectRay.o    = evalMtlsWork.pHit;
         indirectRay.d    = shadingFrame.toWorld(bsdfSamplingRecord.wiLocal);
-        indirectRay.mint = 0.001;
+        indirectRay.mint = kRayTOffsetEpsilon();
 
         dRec           = DirectSamplingRecord{0.0f, indirectRay.d, SamplingMeasure::SolidAngle};
         float lightPdf = domeEmitter->pdfDirect(dRec);

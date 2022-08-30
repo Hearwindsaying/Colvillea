@@ -1,6 +1,7 @@
 set(KERNEL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 
 set(INTERFACE_BASE
+    ${KERNEL_INCLUDE_DIR}/libkernel/base/config.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/ray.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/owldefs.h
     ${KERNEL_INCLUDE_DIR}/libkernel/base/bsdf.h
