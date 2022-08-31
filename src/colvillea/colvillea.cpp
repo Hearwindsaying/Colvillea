@@ -8,6 +8,7 @@
 #include <librender/renderengine.h>
 #include <librender/scene.h>
 #include <librender/entity.h>
+#include <librender/mdlcompiler.h>
 #include <librender/nodebase/material.h>
 #include <librender/nodebase/emitter.h>
 
@@ -30,13 +31,16 @@ int main(int argc, char* argv[])
 
     auto dir = std::filesystem::weakly_canonical(std::filesystem::path(argv[0])).parent_path();
 
+    core::MDLCompilerOptions options{};
+    options.search_path = dir.string().c_str();
+
     /*auto objMeshes = delegate::MeshImporter::loadMeshes(dir / "leftrightplane.obj");
     auto cubeMesh  = delegate::MeshImporter::loadDefaultCube();*/
 
     std::shared_ptr<core::Integrator>   ptIntegrator  = core::Integrator::createIntegrator(core::IntegratorType::WavefrontPathTracing, 800, 600);
     std::shared_ptr<core::Scene>        pScene        = core::Scene::createScene();
     core::Scene*                        pSceneViewer  = pScene.get();
-    std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(ptIntegrator, pScene);
+    std::unique_ptr<core::RenderEngine> pRenderEngine = core::RenderEngine::createRenderEngine(ptIntegrator, pScene, options);
 
 
     /*pScene->addTriangleMeshes(std::move(objMeshes));

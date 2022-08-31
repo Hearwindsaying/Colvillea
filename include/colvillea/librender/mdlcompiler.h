@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <vector>
+
 #include <spdlog/spdlog.h>
 
 #include <mi/mdl_sdk.h>
@@ -20,14 +22,42 @@ namespace colvillea
 {
 namespace core
 {
+
+struct MDLCompilerOptions
+{ 
+    /// additional search paths that are added after admin/user and the example search paths
+    std::vector<std::string> additional_mdl_paths;
+
+    /// set to false to not add the admin space search paths. It's recommend to leave this true.
+    bool add_admin_space_search_paths{true};
+
+    /// set to false to not add the user space search paths. It's recommend to leave this true.
+    bool add_user_space_search_paths{true};
+
+    /// search path for sample materials.
+    std::string search_path{};
+
+    bool skip_loading_plugins;    ///< set to true to disable (optional) plugin loading
+};
+
 class MDLCompiler
 {
 public:
-    MDLCompiler();
+    MDLCompiler(MDLCompilerOptions const& options);
 
-    ~MDLCompiler() {}
+    ~MDLCompiler()
+    {
+        // Shutting the MDL SDK down in blocking mode. Again, a return code of 0 indicates success.
+        if (this->m_neuray->shutdown(true) != 0)
+            spdlog::critical("Failed to shutdown the SDK.");
 
-private:
+        // Unload the MDL SDK
+        this->m_neuray = nullptr; // free the handles that holds the INeuray instance
+        if (!unload())
+            spdlog::critical("Failed to unload the SDK.");
+    }
+
+protected:
     mi::neuraylib::INeuray* load_and_get_ineuray(const char* filename)
     {
 #ifdef MI_PLATFORM_WINDOWS
@@ -113,8 +143,16 @@ private:
 #endif
     }
 
+    bool configure(MDLCompilerOptions options);
+
+    mi::Sint32 load_plugin(const char* path);
+
 private:
     HMODULE g_dso_handle{0};
+
+    mi::base::Handle<mi::base::ILogger> g_logger;
+
+    mi::base::Handle<mi::neuraylib::INeuray> m_neuray{};
 };
 } // namespace core
 } // namespace colvillea

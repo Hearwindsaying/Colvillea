@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <librender/integrator.h>
+#include <librender/mdlcompiler.h>
 #include <librender/nodebase/camera.h>
 
 namespace colvillea
@@ -29,10 +30,11 @@ class RenderEngine
 {
 public:
     static std::unique_ptr<RenderEngine> createRenderEngine(std::shared_ptr<Integrator> integrator,
-                                                            std::shared_ptr<Scene>      scene);
+                                                            std::shared_ptr<Scene>      scene,
+                                                            const MDLCompilerOptions&   options);
 
 public:
-    RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene);
+    RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene, const MDLCompilerOptions& options);
 
     ~RenderEngine();
 

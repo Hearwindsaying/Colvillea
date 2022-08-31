@@ -8,15 +8,16 @@ namespace colvillea
 namespace core
 {
 std::unique_ptr<RenderEngine> RenderEngine::createRenderEngine(std::shared_ptr<Integrator> integrator,
-                                                               std::shared_ptr<Scene>      scene)
+                                                               std::shared_ptr<Scene>      scene,
+                                                               const MDLCompilerOptions&   options)
 {
-    return std::make_unique<RenderEngine>(std::move(integrator), std::move(scene));
+    return std::make_unique<RenderEngine>(std::move(integrator), std::move(scene), options);
 }
 
-RenderEngine::RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene) :
+RenderEngine::RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene, const MDLCompilerOptions& options) :
     m_integrator{integrator}, m_scene{scene}
 {
-    this->m_mdlCompiler = std::make_unique<MDLCompiler>();
+    this->m_mdlCompiler = std::make_unique<MDLCompiler>(options);
 }
 
 RenderEngine::~RenderEngine()
