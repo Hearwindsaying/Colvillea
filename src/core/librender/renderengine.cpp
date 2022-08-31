@@ -1,6 +1,7 @@
 #include <librender/renderengine.h>
 #include <librender/scene.h>
 #include <librender/integrator.h>
+#include <librender/mdlcompiler.h>
 
 namespace colvillea
 {
@@ -10,6 +11,16 @@ std::unique_ptr<RenderEngine> RenderEngine::createRenderEngine(std::shared_ptr<I
                                                                std::shared_ptr<Scene>      scene)
 {
     return std::make_unique<RenderEngine>(std::move(integrator), std::move(scene));
+}
+
+RenderEngine::RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene) :
+    m_integrator{integrator}, m_scene{scene}
+{
+    this->m_mdlCompiler = std::make_unique<MDLCompiler>();
+}
+
+RenderEngine::~RenderEngine()
+{
 }
 
 void RenderEngine::startRendering()

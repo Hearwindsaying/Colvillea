@@ -11,6 +11,7 @@ namespace core
 {
 
 class Scene;
+class MDLCompiler;
 
 /**
  * \brief
@@ -31,8 +32,9 @@ public:
                                                             std::shared_ptr<Scene>      scene);
 
 public:
-    RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene) :
-        m_integrator{integrator}, m_scene{scene} {}
+    RenderEngine(std::shared_ptr<Integrator> integrator, std::shared_ptr<Scene> scene);
+
+    ~RenderEngine();
 
     /// Start rendering.
     void startRendering();
@@ -100,6 +102,8 @@ protected:
 protected:
     std::shared_ptr<Integrator> m_integrator;
     std::shared_ptr<Scene>      m_scene;
+
+    std::unique_ptr<MDLCompiler> m_mdlCompiler;
 };
 } // namespace core
 } // namespace colvillea

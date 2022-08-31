@@ -1,3 +1,13 @@
+# Setup MDL.
+set(MDL_INCLUDE_DIR "MDL_INCLUDE_DIR")
+set(MDL_DLL_DIR "MDL_DLL_DIR")
+
+include(${CMAKE_SOURCE_DIR}/cmake/FindMDL.cmake)
+FIND_MDL(MDL_INCLUDE_DIR MDL_DLL_DIR)
+
+# Config MDL dll dir and write to configMDLPath.h
+configure_file(${CMAKE_SOURCE_DIR}/ext/configMDLPath.h.meta ${CMAKE_CURRENT_BINARY_DIR}/src/configMDLPath.h @ONLY)
+
 set(CORE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 
 set(INTERFACE_LIBRENDER
@@ -7,6 +17,7 @@ set(INTERFACE_LIBRENDER
     ${CORE_INCLUDE_DIR}/librender/scene.h
     ${CORE_INCLUDE_DIR}/librender/entity.h
     ${CORE_INCLUDE_DIR}/librender/renderengine.h
+    ${CORE_INCLUDE_DIR}/librender/mdlcompiler.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/shape.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/camera.h
     ${CORE_INCLUDE_DIR}/librender/nodebase/material.h
@@ -67,6 +78,7 @@ set(SOURCE_LIBRENDER
     librender/scene.cpp
     librender/entity.cpp
     librender/renderengine.cpp
+    librender/mdlcompiler.cpp
     librender/nodebase/shape.cpp
     librender/nodebase/material.cpp
     librender/nodebase/emitter.cpp
@@ -227,6 +239,11 @@ STATIC
 target_include_directories(colvillea-core
 PUBLIC
     ${CORE_INCLUDE_DIR}
+    
+    ${MDL_INCLUDE_DIR}
+
+    # MDL Dir
+    ${CMAKE_CURRENT_BINARY_DIR}/src
 )
 
 target_link_libraries(colvillea-core

@@ -1,3 +1,14 @@
+# Setup MDL.
+set(MDL_INCLUDE_DIR "MDL_INCLUDE_DIR")
+set(MDL_DLL_DIR "MDL_DLL_DIR")
+
+include(${CMAKE_SOURCE_DIR}/cmake/FindMDL.cmake)
+FIND_MDL(MDL_INCLUDE_DIR MDL_DLL_DIR)
+
+# Config MDL dll dir and write to configMDLPath.h
+configure_file(${CMAKE_SOURCE_DIR}/ext/configMDLPath.h.meta ${CMAKE_CURRENT_BINARY_DIR}/src/configMDLPath.h @ONLY)
+
+
 set(KERNEL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/colvillea)
 
 set(INTERFACE_BASE
